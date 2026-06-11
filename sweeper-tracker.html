@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Sweeper Tracker - World Cup 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --pitch: #0a2351;
+    --pitch-light: #15347a;
+    --chalk: #f4f1e8;
+    --gold: #ffffff;
+    --accent: #d6293e;
+    --red: #d6293e;
+    --green: #2a6b3f;
+    --line: rgba(244,241,232,0.3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--pitch);
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1.5px),
+      radial-gradient(circle at 20% 80%, rgba(214,41,62,0.10), transparent 45%),
+      radial-gradient(circle at 80% 15%, rgba(214,41,62,0.08), transparent 45%),
+      repeating-linear-gradient(0deg, var(--pitch-light) 0px, var(--pitch-light) 60px, var(--pitch) 60px, var(--pitch) 120px);
+    background-size: 28px 28px, cover, cover, cover;
+    color: var(--chalk);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 16px 12px 60px;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    20% { transform: translateX(-3px) rotate(-1deg); }
+    40% { transform: translateX(3px) rotate(1deg); }
+    60% { transform: translateX(-2px) rotate(-0.5deg); }
+    80% { transform: translateX(2px) rotate(0.5deg); }
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 6px rgba(212,160,23,0.35); }
+    50% { box-shadow: 0 0 16px rgba(212,160,23,0.75); }
+  }
+
+  @keyframes trophyBounce {
+    0%, 100% { transform: translateY(0) rotate(-6deg); }
+    50% { transform: translateY(-4px) rotate(6deg); }
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+    border: 2px solid var(--chalk);
+    border-bottom: 5px solid var(--accent);
+    border-radius: 4px;
+    padding: 20px 16px;
+    background: rgba(0,0,0,0.2);
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+    letter-spacing: 0.08em;
+    margin: 0;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+
+  header p { margin: 6px 0 0; font-size: 0.8rem; opacity: 0.8; }
+
+  .live-link {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    color: var(--chalk);
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .live-link:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: var(--chalk);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tab {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 1rem;
+    padding: 10px 18px;
+    border: 2px solid var(--line);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.15);
+    color: var(--chalk);
+    cursor: pointer;
+  }
+
+  .tab.active {
+    background: var(--gold);
+    color: var(--pitch);
+    border-color: var(--gold);
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  /* Squad cards (my teams) */
+  .squad-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .squad-card {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+    background: rgba(244,241,232,0.04);
+    animation: popIn 0.4s ease backwards;
+    position: relative;
+    transition: transform 0.15s ease;
+  }
+
+  .squad-card:hover { transform: translateY(-2px); }
+
+  .squad-card.leader {
+    border-color: var(--gold);
+    animation: popIn 0.4s ease backwards, glow 2.5s ease-in-out infinite;
+  }
+
+  .squad-card.crashed-out {
+    opacity: 0.55;
+  }
+
+  .rank-badge {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--pitch);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--pitch);
+    font-weight: bold;
+  }
+
+  .rank-badge.gold { background: #ffd700; }
+  .rank-badge.silver { background: #c0c0c0; }
+  .rank-badge.bronze { background: #cd7f32; }
+
+  .trophy {
+    display: inline-block;
+    animation: trophyBounce 1.4s ease-in-out infinite;
+    margin-left: 4px;
+  }
+
+  .squad-card .owner {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .alive-count {
+    font-size: 0.8rem;
+    background: var(--chalk);
+    color: var(--pitch);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+  }
+
+  .alive-count.zero { background: var(--red); color: var(--chalk); }
+
+  .team-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    background: rgba(0,0,0,0.15);
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+
+  .team-row:hover { background: rgba(0,0,0,0.3); }
+
+  .team-row.eliminated {
+    opacity: 0.45;
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 2px;
+    animation: shake 0.4s ease;
+  }
+
+  .team-row .flag {
+    margin-right: 6px;
+    font-size: 1.1rem;
+  }
+
+  .team-row .cross {
+    color: var(--red);
+    font-weight: bold;
+    font-size: 1.1rem;
+    visibility: hidden;
+  }
+
+  .team-row.eliminated .cross { visibility: visible; }
+
+  /* Fixtures */
+  .day-group { margin-bottom: 14px; }
+
+  .day-header {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+
+  .fixture {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+    background: rgba(244,241,232,0.04);
+    flex-wrap: wrap;
+  }
+
+  .fixture.highlight {
+    background: rgba(212,160,23,0.12);
+    border: 1px solid rgba(212,160,23,0.4);
+  }
+
+  .fixture .time {
+    font-weight: bold;
+    color: var(--gold);
+    min-width: 58px;
+  }
+
+  .fixture .teams-cell {
+    flex: 1;
+    min-width: 160px;
+  }
+
+  .fixture .channel {
+    font-size: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 2px 8px;
+    opacity: 0.85;
+  }
+
+  .owner-tag {
+    font-size: 0.7rem;
+    background: var(--gold);
+    color: var(--pitch);
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    font-weight: bold;
+    vertical-align: middle;
+  }
+
+  .group-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .group-table th, .group-table td {
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+    text-align: left;
+  }
+
+  .group-table th {
+    color: var(--gold);
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
+    font-size: 1rem;
+  }
+
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 8px;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 0.72rem;
+    opacity: 0.6;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🇺🇸 Nichol Smith Development Sweeper Tracker</h1>
+    <p>⚽ World Cup 2026 &mdash; tap a team when it's OUT, or hit refresh for live results</p>
+    <div style="margin-top:12px;">
+      <button id="refreshBtn" style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.08em; font-size:1rem; padding:10px 20px; border:2px solid var(--chalk); border-radius:4px; background:var(--accent); color:var(--chalk); cursor:pointer;">Refresh Live Results</button>
+      <div id="refreshStatus" style="font-size:0.7rem; opacity:0.75; margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+      <a href="https://www.bbc.co.uk/sport/football/world-cup/scores-fixtures" target="_blank" rel="noopener" class="live-link">BBC Live Scores</a>
+      <a href="https://www.skysports.com/world-cup-fixtures" target="_blank" rel="noopener" class="live-link">Sky Sports Live Scores</a>
+      <a href="https://www.flashscore.co.uk/football/world/world-cup/" target="_blank" rel="noopener" class="live-link">FlashScore</a>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="myteams">My Teams</div>
+    <div class="tab" data-tab="fixtures">Fixtures (UK times)</div>
+    <div class="tab" data-tab="groups">Groups</div>
+  </div>
+
+  <!-- MY TEAMS VIEW -->
+  <div class="view active" id="myteams">
+    <div class="squad-grid" id="squadGrid"></div>
+    <p class="hint">Tap a team to toggle eliminated &#10060; / still in. Resets if you reload the page &mdash; this is just for following along live.</p>
+  </div>
+
+  <!-- FIXTURES VIEW -->
+  <div class="view" id="fixtures">
+    <div id="fixturesList"></div>
+    <p class="hint">All times UK (BST). Highlighted rows = one of our sweeper teams is playing, with the owner's name tagged. Channels per BBC/ITV split confirmed where known &mdash; check listings nearer the time for exact channel (BBC One/Two/iPlayer or ITV1/ITVX/STV).</p>
+  </div>
+
+  <!-- GROUPS VIEW -->
+  <div class="view" id="groups">
+    <div class="groups-grid" id="groupsGrid"></div>
+  </div>
+
+  <footer>Six teams each, drawn at random. May the odds be ever in your favour.</footer>
+</div>
+
+<script>
+// Flag emoji for each team
+const flags = {
+  "USA": "🇺🇸", "Mexico": "🇲🇽", "Canada": "🇨🇦", "Japan": "🇯🇵", "Iran": "🇮🇷",
+  "South Korea": "🇰🇷", "Australia": "🇦🇺", "Saudi Arabia": "🇸🇦", "Qatar": "🇶🇦",
+  "Uzbekistan": "🇺🇿", "Jordan": "🇯🇴", "Iraq": "🇮🇶", "Argentina": "🇦🇷", "Brazil": "🇧🇷",
+  "Uruguay": "🇺🇾", "Colombia": "🇨🇴", "Ecuador": "🇪🇨", "Paraguay": "🇵🇾",
+  "New Zealand": "🇳🇿", "Morocco": "🇲🇦", "Senegal": "🇸🇳", "Egypt": "🇪🇬",
+  "Algeria": "🇩🇿", "Tunisia": "🇹🇳", "South Africa": "🇿🇦", "Ivory Coast": "🇨🇮",
+  "Ghana": "🇬🇭", "Cape Verde": "🇨🇻", "DR Congo": "🇨🇩", "England": "🏴",
+  "France": "🇫🇷", "Spain": "🇪🇸", "Germany": "🇩🇪", "Portugal": "🇵🇹",
+  "Netherlands": "🇳🇱", "Belgium": "🇧🇪", "Croatia": "🇭🇷", "Switzerland": "🇨🇭",
+  "Austria": "🇦🇹", "Scotland": "🏴", "Norway": "🇳🇴",
+  "Bosnia and Herzegovina": "🇧🇦", "Sweden": "🇸🇪", "Turkiye": "🇹🇷", "Czechia": "🇨🇿",
+  "Panama": "🇵🇦", "Curacao": "🇨🇼", "Haiti": "🇭🇹"
+};
+
+
+const squads = {
+  "Ross":   ["Tunisia","Mexico","Portugal","Jordan","Morocco","Ivory Coast"],
+  "Nathan": ["Canada","Uzbekistan","Iran","Belgium","Croatia","Czechia"],
+  "Sean":   ["Australia","Uruguay","USA","Qatar","Brazil","Netherlands"],
+  "Martin": ["Algeria","DR Congo","France","Curacao","Austria","Spain"],
+  "Smyth":  ["Iraq","Bosnia and Herzegovina","Panama","Senegal","Germany","Saudi Arabia"],
+  "Sophie": ["Paraguay","England","Colombia","Haiti","Ecuador","Ghana"],
+  "Kae":    ["Switzerland","Japan","South Korea","New Zealand","Norway","Cape Verde"],
+  "Jason":  ["Turkiye","South Africa","Egypt","Sweden","Argentina","Scotland"]
+};
+
+// Build a lookup: team name -> owner (handle name variants)
+const nameMap = {
+  "Czech Republic": "Czechia",
+  "Korea Republic": "South Korea",
+  "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+  "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+  "Turkey": "Turkiye"
+};
+
+function normalizeTeam(name) {
+  return nameMap[name] || name;
+}
+
+const teamOwner = {};
+Object.entries(squads).forEach(([owner, teams]) => {
+  teams.forEach(t => teamOwner[t] = owner);
+});
+
+// Group stage fixtures (UK times), group letter, host city
+const fixtures = [
+  { day: "Thu 11 Jun", time: "8pm",   teams: ["Mexico","South Africa"], group: "A", venue: "Mexico City" },
+  { day: "Fri 12 Jun", time: "3am",   teams: ["South Korea","Czechia"], group: "A", venue: "Zapopan" },
+  { day: "Fri 12 Jun", time: "8pm",   teams: ["Canada","Bosnia and Herzegovina"], group: "B", venue: "Toronto" },
+  { day: "Sat 13 Jun", time: "2am",   teams: ["USA","Paraguay"], group: "D", venue: "Los Angeles" },
+  { day: "Sat 13 Jun", time: "8pm",   teams: ["Qatar","Switzerland"], group: "B", venue: "Santa Clara" },
+  { day: "Sat 13 Jun", time: "11pm",  teams: ["Brazil","Morocco"], group: "C", venue: "New Jersey" },
+  { day: "Sun 14 Jun", time: "2am",   teams: ["Haiti","Scotland"], group: "C", venue: "Foxborough" },
+  { day: "Sun 14 Jun", time: "5am",   teams: ["Australia","Turkiye"], group: "D", venue: "Vancouver" },
+  { day: "Sun 14 Jun", time: "6pm",   teams: ["Germany","Curacao"], group: "E", venue: "Houston" },
+  { day: "Sun 14 Jun", time: "9pm",   teams: ["Netherlands","Japan"], group: "F", venue: "Arlington" },
+  { day: "Mon 15 Jun", time: "12am",  teams: ["Ivory Coast","Ecuador"], group: "E", venue: "Philadelphia" },
+  { day: "Mon 15 Jun", time: "3am",   teams: ["Sweden","Tunisia"], group: "F", venue: "Guadalupe" },
+  { day: "Mon 15 Jun", time: "5pm",   teams: ["Spain","Cape Verde"], group: "H", venue: "Atlanta" },
+  { day: "Mon 15 Jun", time: "8pm",   teams: ["Belgium","Egypt"], group: "G", venue: "Seattle" },
+  { day: "Mon 15 Jun", time: "11pm",  teams: ["Saudi Arabia","Uruguay"], group: "H", venue: "Miami" },
+  { day: "Tue 16 Jun", time: "2am",   teams: ["Iran","New Zealand"], group: "G", venue: "Los Angeles" },
+  { day: "Tue 16 Jun", time: "8pm",   teams: ["France","Senegal"], group: "I", venue: "New Jersey" },
+  { day: "Tue 16 Jun", time: "11pm",  teams: ["Iraq","Norway"], group: "I", venue: "Foxborough" },
+  { day: "Wed 17 Jun", time: "2am",   teams: ["Argentina","Algeria"], group: "J", venue: "Kansas City" },
+  { day: "Wed 17 Jun", time: "5am",   teams: ["Austria","Jordan"], group: "J", venue: "Santa Clara" },
+  { day: "Wed 17 Jun", time: "6pm",   teams: ["Portugal","DR Congo"], group: "K", venue: "Houston" },
+  { day: "Wed 17 Jun", time: "9pm",   teams: ["England","Croatia"], group: "L", venue: "Arlington" },
+  { day: "Thu 18 Jun", time: "12am",  teams: ["Ghana","Panama"], group: "L", venue: "Toronto" },
+  { day: "Thu 18 Jun", time: "3am",   teams: ["Uzbekistan","Colombia"], group: "K", venue: "Mexico City" },
+  { day: "Thu 18 Jun", time: "5pm",   teams: ["Czechia","South Africa"], group: "A", venue: "Atlanta" },
+  { day: "Thu 18 Jun", time: "8pm",   teams: ["Switzerland","Bosnia and Herzegovina"], group: "B", venue: "Los Angeles" },
+  { day: "Thu 18 Jun", time: "11pm",  teams: ["Canada","Qatar"], group: "B", venue: "Vancouver" },
+  { day: "Fri 19 Jun", time: "2am",   teams: ["Mexico","South Korea"], group: "A", venue: "Zapopan" },
+  { day: "Fri 19 Jun", time: "8pm",   teams: ["USA","Australia"], group: "D", venue: "Seattle" },
+  { day: "Fri 19 Jun", time: "11pm",  teams: ["Scotland","Morocco"], group: "C", venue: "Foxborough" },
+  { day: "Sat 20 Jun", time: "1.30am",teams: ["Brazil","Haiti"], group: "C", venue: "Philadelphia" },
+  { day: "Sat 20 Jun", time: "4am",   teams: ["Turkiye","Paraguay"], group: "D", venue: "Santa Clara" },
+  { day: "Sat 20 Jun", time: "6pm",   teams: ["Netherlands","Sweden"], group: "A", venue: "Houston" },
+  { day: "Sat 20 Jun", time: "9pm",   teams: ["Germany","Ivory Coast"], group: "E", venue: "Toronto" },
+  { day: "Sun 21 Jun", time: "1am",   teams: ["Ecuador","Curacao"], group: "E", venue: "Kansas City" },
+  { day: "Sun 21 Jun", time: "5am",   teams: ["Tunisia","Japan"], group: "F", venue: "Guadalupe" },
+  { day: "Sun 21 Jun", time: "5pm",   teams: ["Spain","Saudi Arabia"], group: "H", venue: "Atlanta" },
+  { day: "Sun 21 Jun", time: "8pm",   teams: ["Belgium","Iran"], group: "G", venue: "Los Angeles" },
+  { day: "Sun 21 Jun", time: "11pm",  teams: ["Uruguay","Cape Verde"], group: "H", venue: "Miami" },
+  { day: "Mon 22 Jun", time: "2am",   teams: ["New Zealand","Egypt"], group: "G", venue: "Vancouver" },
+  { day: "Mon 22 Jun", time: "6pm",   teams: ["Argentina","Austria"], group: "J", venue: "Arlington" },
+  { day: "Mon 22 Jun", time: "10pm",  teams: ["France","Iraq"], group: "I", venue: "Philadelphia" },
+  { day: "Tue 23 Jun", time: "1am",   teams: ["Norway","Senegal"], group: "I", venue: "Toronto" },
+  { day: "Tue 23 Jun", time: "4am",   teams: ["Jordan","Algeria"], group: "J", venue: "Santa Clara" },
+  { day: "Tue 23 Jun", time: "6pm",   teams: ["Portugal","Uzbekistan"], group: "K", venue: "Houston" },
+  { day: "Tue 23 Jun", time: "9pm",   teams: ["England","Ghana"], group: "L", venue: "Foxborough" },
+  { day: "Wed 24 Jun", time: "12am",  teams: ["Panama","Croatia"], group: "L", venue: "Foxborough" },
+  { day: "Wed 24 Jun", time: "3am",   teams: ["Colombia","DR Congo"], group: "K", venue: "Zapopan" },
+  { day: "Wed 24 Jun", time: "8pm",   teams: ["Switzerland","Canada"], group: "B", venue: "Vancouver" },
+  { day: "Wed 24 Jun", time: "8pm",   teams: ["Bosnia and Herzegovina","Qatar"], group: "B", venue: "Seattle" },
+  { day: "Wed 24 Jun", time: "11pm",  teams: ["Morocco","Haiti"], group: "C", venue: "Atlanta" },
+  { day: "Wed 24 Jun", time: "11pm",  teams: ["Scotland","Brazil"], group: "C", venue: "Miami" },
+  { day: "Thu 25 Jun", time: "2am",   teams: ["South Africa","South Korea"], group: "A", venue: "Guadalupe" },
+  { day: "Thu 25 Jun", time: "2am",   teams: ["Czechia","Mexico"], group: "A", venue: "Mexico City" },
+  { day: "Thu 25 Jun", time: "9pm",   teams: ["Curacao","Ivory Coast"], group: "E", venue: "Philadelphia" },
+  { day: "Thu 25 Jun", time: "9pm",   teams: ["Ecuador","Germany"], group: "E", venue: "New Jersey" },
+  { day: "Fri 26 Jun", time: "12am",  teams: ["Tunisia","Netherlands"], group: "F", venue: "Kansas City" },
+  { day: "Fri 26 Jun", time: "12am",  teams: ["Japan","Sweden"], group: "F", venue: "Arlington" },
+  { day: "Fri 26 Jun", time: "3am",   teams: ["Turkiye","USA"], group: "D", venue: "Los Angeles" },
+  { day: "Fri 26 Jun", time: "3am",   teams: ["Paraguay","Australia"], group: "D", venue: "Santa Clara" },
+  { day: "Fri 26 Jun", time: "8pm",   teams: ["Norway","France"], group: "I", venue: "Foxborough" },
+  { day: "Fri 26 Jun", time: "8pm",   teams: ["Senegal","Iraq"], group: "I", venue: "Toronto" },
+  { day: "Sat 27 Jun", time: "1am",   teams: ["Cape Verde","Saudi Arabia"], group: "H", venue: "Houston" },
+  { day: "Sat 27 Jun", time: "1am",   teams: ["Uruguay","Spain"], group: "H", venue: "Zapopan" },
+  { day: "Sat 27 Jun", time: "4am",   teams: ["New Zealand","Belgium"], group: "G", venue: "Vancouver" },
+  { day: "Sat 27 Jun", time: "4am",   teams: ["Egypt","Iran"], group: "G", venue: "Seattle" },
+  { day: "Sat 27 Jun", time: "10pm",  teams: ["Panama","England"], group: "L", venue: "New Jersey" },
+  { day: "Sat 27 Jun", time: "10pm",  teams: ["Croatia","Ghana"], group: "L", venue: "Philadelphia" },
+];
+
+// Confirmed BBC/ITV split (partial - the rest TBC)
+const channelMap = {
+  "Mexico-South Africa": "ITV",
+  "Canada-Bosnia and Herzegovina": "BBC",
+  "Haiti-Scotland": "BBC",
+  "Scotland-Morocco": "ITV",
+  "Scotland-Brazil": "BBC",
+  "England-Croatia": "ITV",
+  "England-Ghana": "BBC",
+  "Panama-England": "ITV"
+};
+
+function getChannel(teams) {
+  const key1 = teams[0] + "-" + teams[1];
+  const key2 = teams[1] + "-" + teams[0];
+  return channelMap[key1] || channelMap[key2] || "BBC/ITV - TBC";
+}
+
+// Group stage draw
+const groupDraw = {
+  A: ["Mexico","South Africa","South Korea","Czechia"],
+  B: ["Canada","Switzerland","Qatar","Bosnia and Herzegovina"],
+  C: ["Brazil","Morocco","Haiti","Scotland"],
+  D: ["USA","Paraguay","Australia","Turkiye"],
+  E: ["Germany","Curacao","Ivory Coast","Ecuador"],
+  F: ["Netherlands","Japan","Tunisia","Sweden"],
+  G: ["Belgium","Egypt","Iran","New Zealand"],
+  H: ["Spain","Cape Verde","Saudi Arabia","Uruguay"],
+  I: ["France","Senegal","Norway","Iraq"],
+  J: ["Argentina","Algeria","Austria","Jordan"],
+  K: ["Portugal","Uzbekistan","Colombia","DR Congo"],
+  L: ["England","Croatia","Ghana","Panama"]
+};
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ---- Eliminated state ----
+const eliminated = new Set();
+
+function renderSquads() {
+  const grid = document.getElementById('squadGrid');
+  grid.innerHTML = '';
+
+  // Compute alive counts and sort for ranking
+  const ranked = Object.entries(squads).map(([owner, teams]) => {
+    const alive = teams.filter(t => !eliminated.has(t)).length;
+    return { owner, teams, alive };
+  }).sort((a, b) => b.alive - a.alive);
+
+  const maxAlive = ranked[0].alive;
+
+  ranked.forEach((entry, idx) => {
+    const { owner, teams, alive } = entry;
+    const card = document.createElement('div');
+    card.className = 'squad-card';
+    card.style.animationDelay = (idx * 0.06) + 's';
+    if (alive === maxAlive && alive > 0) card.classList.add('leader');
+    if (alive === 0) card.classList.add('crashed-out');
+
+    // Rank badge
+    const badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    if (idx === 0 && alive > 0) badge.classList.add('gold');
+    else if (idx === 1 && alive > 0) badge.classList.add('silver');
+    else if (idx === 2 && alive > 0) badge.classList.add('bronze');
+    badge.textContent = idx + 1;
+    card.appendChild(badge);
+
+    const ownerEl = document.createElement('div');
+    ownerEl.className = 'owner';
+    const trophyHtml = (idx === 0 && alive > 0) ? '<span class="trophy">🏆</span>' : '';
+    ownerEl.innerHTML = `<span>${owner}${trophyHtml}</span><span class="alive-count ${alive === 0 ? 'zero' : ''}">${alive}/6 left</span>`;
+    card.appendChild(ownerEl);
+
+    teams.forEach(team => {
+      const row = document.createElement('div');
+      row.className = 'team-row' + (eliminated.has(team) ? ' eliminated' : '');
+      const flag = flags[team] || '';
+      row.innerHTML = `<span><span class="flag">${flag}</span>${team}</span><span class="cross">&#10060;</span>`;
+      row.addEventListener('click', () => {
+        if (eliminated.has(team)) eliminated.delete(team);
+        else eliminated.add(team);
+        renderSquads();
+      });
+      card.appendChild(row);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function renderFixtures() {
+  const list = document.getElementById('fixturesList');
+  list.innerHTML = '';
+  let currentDay = null;
+  let dayDiv = null;
+
+  fixtures.forEach(fx => {
+    if (fx.day !== currentDay) {
+      currentDay = fx.day;
+      dayDiv = document.createElement('div');
+      dayDiv.className = 'day-group';
+      const h = document.createElement('div');
+      h.className = 'day-header';
+      h.textContent = currentDay;
+      dayDiv.appendChild(h);
+      list.appendChild(dayDiv);
+    }
+
+    const t1 = normalizeTeam(fx.teams[0]);
+    const t2 = normalizeTeam(fx.teams[1]);
+    const owner1 = teamOwner[t1];
+    const owner2 = teamOwner[t2];
+    const isHighlight = owner1 || owner2;
+
+    const row = document.createElement('div');
+    row.className = 'fixture' + (isHighlight ? ' highlight' : '');
+
+    const teamsCell = document.createElement('div');
+    teamsCell.className = 'teams-cell';
+    teamsCell.innerHTML =
+      `${flags[normalizeTeam(fx.teams[0])] || ''} ${fx.teams[0]}${owner1 ? `<span class="owner-tag">${owner1}</span>` : ''} vs ` +
+      `${flags[normalizeTeam(fx.teams[1])] || ''} ${fx.teams[1]}${owner2 ? `<span class="owner-tag">${owner2}</span>` : ''} ` +
+      `<span style="opacity:0.6; font-size:0.75rem;">(Grp ${fx.group}, ${fx.venue})</span>`;
+
+    const timeCell = document.createElement('div');
+    timeCell.className = 'time';
+    timeCell.textContent = fx.time;
+
+    const channelCell = document.createElement('div');
+    channelCell.className = 'channel';
+    channelCell.textContent = getChannel(fx.teams);
+
+    row.appendChild(timeCell);
+    row.appendChild(teamsCell);
+    row.appendChild(channelCell);
+    dayDiv.appendChild(row);
+  });
+}
+
+function renderGroups() {
+  const grid = document.getElementById('groupsGrid');
+  grid.innerHTML = '';
+  Object.entries(groupDraw).forEach(([letter, teams]) => {
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    let html = `<table class="group-table"><tr><th colspan="2">Group ${letter}</th></tr>`;
+    teams.forEach(t => {
+      const owner = teamOwner[normalizeTeam(t)];
+      const flag = flags[normalizeTeam(t)] || '';
+      html += `<tr><td>${flag} ${t}</td><td>${owner ? `<span class="owner-tag">${owner}</span>` : ''}</td></tr>`;
+    });
+    html += '</table>';
+    panel.innerHTML = html;
+    grid.appendChild(panel);
+  });
+}
+
+renderSquads();
+renderFixtures();
+renderGroups();
+
+// ---- Live results refresh ----
+const STANDINGS_URL = "https://worldcupwiki.com/standings/";
+const PROXY = "https://api.allorigins.win/raw?url=";
+
+const standingsNameMap = {
+  "United States": "USA",
+  "Türkiye": "Turkiye",
+  "Curaçao": "Curacao",
+  "South Korea": "South Korea",
+  "Korea Republic": "South Korea"
+};
+
+function normalizeStandingsName(name) {
+  name = name.trim();
+  return standingsNameMap[name] || name;
+}
+
+async function refreshLiveResults() {
+  const btn = document.getElementById('refreshBtn');
+  const status = document.getElementById('refreshStatus');
+  btn.disabled = true;
+  btn.textContent = 'Fetching...';
+  status.textContent = '';
+
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(STANDINGS_URL));
+    if (!res.ok) throw new Error('Network response not OK');
+    const html = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const tables = doc.querySelectorAll('table');
+
+    let updated = 0;
+    let outCount = 0;
+
+    tables.forEach(table => {
+      const rows = table.querySelectorAll('tr');
+      rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).map(c => c.textContent.trim());
+        // Expect: Pos, Team, MP, W, D, L, GF, GA, GD, Pts  (10 cols)
+        if (cells.length === 10) {
+          const teamRaw = cells[1];
+          const mp = parseInt(cells[2], 10);
+          const pts = parseInt(cells[9], 10);
+          const team = normalizeStandingsName(teamRaw);
+
+          if (!isNaN(mp) && !isNaN(pts) && teamOwner[team]) {
+            updated++;
+            // Conservative auto-elimination: lost all 3 group games
+            if (mp === 3 && pts === 0) {
+              if (!eliminated.has(team)) {
+                eliminated.add(team);
+                outCount++;
+              }
+            }
+          }
+        }
+      });
+    });
+
+    renderSquads();
+
+    if (updated === 0) {
+      status.textContent = "Couldn't read standings data - try again later, or cross teams off manually.";
+    } else {
+      status.textContent = `Checked ${updated} of our teams. ${outCount} newly marked out (lost all group games). Group stage hasn't finished, so 3rd-place qualification calls still need a manual tick once the picture is clearer.`;
+    }
+  } catch (err) {
+    status.textContent = "Live refresh failed (source unavailable). Cross teams off manually for now.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh Live Results';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', refreshLiveResults);
+</script>
+</body>
+</html>
