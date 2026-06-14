@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Sweeper Tracker - World Cup 2026</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAGHklEQVR4nO2dQW7WMBBGXYRYUIklHICeoDeht+iJuEVPgjhBLwASG6TuWQRZv5JM4thjzzfj76mLVmoTe/Iy4/iP3buPX78lQvZ4Z90AggvlICKUg4hQDiJCOYgI5SAilEOBt9cX6yZ0gXK0spgR0o+7GJNg+drcPzyZnN3kvL2JIMfqrg15nUxgWSEilIOIRJDjto6wpigSYcxBOhEhc5BOUA4iQjnIPm+vLxxzHGE7t2YOM4fI7dxayNnxU95bN4AcYZu6mDlwMU9dlEOEc2ssK0fM6URm0NPK5MP+amzjNkIOfqTuFI45iAjlmIWK550RcnDYb07di66cPp+Fihdd55Xj98/v5b/8+fG5X0tgmUiOSzYcM4kr8eVQdGJLbEvCytHViS0hLYkmx2AntkSyJI4c5lrckhVxvRgughxQWtxy/+nL/298+uF+hhTWjJTS299fya0ZyXXmQNZihdOBiNfM4ciM5K21GX+Zw2mgF3ylEGeZw7UZyVv7PcnhK7ISjnrhRg5HMT3FS18cjDm8hLIC8CEIuhwjzciXyuSkgECXFauLNPKCIedFaDmGsbUB+YYeBq4cyLeULoU9fXt9Wb56tycDKsc8Ziyc9tdk3SyiHOPN2J4RoQ3mwMmBECOrNiD0/ZZrcowve2TBZO3PBTkGlD20W2c8BxG4f3havoY1RqesqLhCMxZw4qAgR+D/KTE5F+SQyt7yfWO6w7ldEACJxrUxh1T2aIY6A2JymuxL5ditHSwlfikZDJTKsa0dWkMNpg2JrpEpGQxUjjkKj06QOb12TU8r7WYwbRxjGx+46XOCA+UgIpZysKaUYBglZo7/0NQt3N46pc1LgcuPM+hyvEOyWebACb30uijOa6SdYnX6MbubzNFj3cDp5ddNISZLH1rwMebosW6g/DgqZ7Ra+tCCjRyNe4A2Bvfz4/PVI7SfsfGABxGr/gTj9O0yN2VlRXWKrr7M1SWma57In3DVzVYf/5VXOTLllmhVh0I/xtSO+4enfnvS2ayV7Xq77x5c/VJJXSg8EVoG2sWHHGkvQ5wGa/nNfjG97UVJYxqfVqaQQ/1BTora7fWwQrezg7vjfsyR5FxiaIaXmYxjIsiRKa84vRsQg1ByZHqPNnZPFw8fM6TIRDUjUQ5yQGQ5BtzTgdNGii0HaYRyEJHgcnRN+7FrSgovB2khvhyd7u/waSPNIAephnIQkSnkUC8BM9SUZCKH+cfoThkftykyB6ljFjkUC4HHmlL3hvoscsxM9R5MlCM+1Xsw2cjhd0xq9V5q40nr1i4A7WDcFd1FlH7lvoTCa4KNi65McLFsxByFzFFX0kbGenWuuseN1V8Ztn8YOmUFOWf0i2z4XDLd00rLLIXHGY4WLOUYcOepFJSDI4zvwkgiZ44xYQ1cXMLKsb1mWkVhe5yofhjL4XRR2rDBh612MTOH+lBji+GT7TDs5dANa8V+X4qnBj/gVezlUGQ3mv1KQPjBB4Qc6ns5ZsbPTIzfCbMfEHIkjFjgABINFDkIIEByNN4u2wpissq+/aQgaSNByZFU/Rg22tA9KY4ZKd62TyafjUX9QA4rcySwW2cwaH2HkyPhxWgMgL1GlCNBRqormP0FlSOhxqsHsD3FlYOYAy0H7C2lCHIfoeVI2LFrB7x3Nv9So4JgcwngWiygZ46Mi2gW4qUvbuRIfmJ6jKNeeJIjuYrsLr7a72bMscLdEMSXFgvOMkfGV6x9tTbjNXNkwFOIUy0WvGaODHL0kdtWgvvMkYFKId61WIgjx4K5IjG0WIgmR2awJZGcyISVI9PVkpBOZOLLkVG0JLYTmYnkWHHJlUlsWDGvHOQU9/Mc4ODv0HoA5ehI9abjIFCOjlRvOg4CxxxEhJmDiFAOIkI5iAjlICKUg4hQDiJCOXbwO22lC+VY431aUxHKscb7tKYinCElIswcRIRyEBHKQUQohz2wT0aUwxjkJ2fKYQzykzMfZYkIMwcRef/jwx/rNhBQmDmICOUgIpSDiFAOIkI5iAjlICKUg4hQDiJCOYgI5SAilIOIUA4iQjmICOUgIpSDiFAOIkI5iAjlICKUg4hQDiJCOYjIP0jMW6qjGpo2AAAAAElFTkSuQmCC">
 <style>
@@ -509,6 +512,7 @@
   <header>
     <h1>🇺🇸 Nichol Smith Development Sweeper Tracker</h1>
     <p>⚽ World Cup 2026 &mdash; tap a team when it's OUT, or hit refresh for live results</p>
+    <div id="syncStatus" style="font-size:0.7rem; margin-top:4px; opacity:0.7;">⚡ Connecting to live sync...</div>
     <div style="margin-top:12px;">
       <button id="refreshBtn" style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.08em; font-size:1rem; padding:10px 20px; border:2px solid var(--chalk); border-radius:4px; background:var(--accent); color:var(--chalk); cursor:pointer;">Refresh Live Results</button>
       <div id="refreshStatus" style="font-size:0.7rem; opacity:0.75; margin-top:6px;"></div>
@@ -811,10 +815,61 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ---- Eliminated state ----
+// ============================================================
+// FIREBASE SYNC — paste your config here after setup
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA6riciEGCEdNrVeDJXeE6e5siaEpys-Rw",
+  authDomain: "nichol-smith---sweeper.firebaseapp.com",
+  databaseURL: "https://nichol-smith---sweeper-default-rtdb.firebaseio.com",
+  projectId: "nichol-smith---sweeper",
+};
+
+let firebaseReady = false;
+let dbRef = null;
 const eliminated = new Set();
+
+try {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+  dbRef = db.ref('sweeper/eliminated');
+
+  // Listen for changes from any device and sync locally
+  dbRef.on('value', snapshot => {
+    eliminated.clear();
+    const data = snapshot.val() || {};
+    Object.keys(data).forEach(team => { if (data[team]) eliminated.add(team); });
+    renderSquads();
+    updateLeaderBanner();
+    const el = document.getElementById('syncStatus');
+    if (el) el.textContent = '🟢 Live sync active — all 8 players see the same state';
+  });
+
+  firebaseReady = true;
+  console.log('Firebase sync active');
+} catch(e) {
+  console.warn('Firebase not configured — running in local mode:', e.message);
+  const el = document.getElementById('syncStatus');
+  if (el) el.textContent = '🔴 Sync not configured — eliminations are local only';
+
+function toggleEliminated(team) {
+  const nowEliminated = !eliminated.has(team);
+  if (firebaseReady && dbRef) {
+    // Write to Firebase — all devices will sync via the listener above
+    dbRef.child(team.replace(/[.#$\[\]]/g, '_')).set(nowEliminated);
+  } else {
+    // Fallback: local only
+    if (nowEliminated) eliminated.add(team);
+    else eliminated.delete(team);
+    renderSquads();
+    updateLeaderBanner();
+  }
+  if (nowEliminated) setTimeout(launchConfetti, 100);
+}
+
 // teamResults: { "TeamName": ["W","D","L", ...] } — filled on refresh
 let teamResults = {};
-let liveScores = {}; // "Team1|||Team2" -> { score1, score2, completed, minute, state }
+let liveScores = {};
 
 // Form dots helper — must be defined before renderGroups
 function formDots(team) {
@@ -874,9 +929,7 @@ function renderSquads() {
 
       row.innerHTML = `<span><span class="flag">${flag}</span>${team}</span><span class="result-dots">${dots}</span><span class="cross">&#10060;</span>`;
       row.addEventListener('click', () => {
-        if (eliminated.has(team)) eliminated.delete(team);
-        else eliminated.add(team);
-        renderSquads();
+        toggleEliminated(team);
       });
       card.appendChild(row);
     });
@@ -1204,7 +1257,7 @@ async function refreshLiveResults(silent = false) {
         gf: s.gf, ga: s.ga, gd: s.gf - s.ga, pts: s.pts
       };
       if (s.mp === 3 && s.pts === 0 && !eliminated.has(team)) {
-        eliminated.add(team);
+        toggleEliminated(team);
         outCount++;
       }
     });
@@ -1414,11 +1467,6 @@ function patchSquadElimination() {
   grid.addEventListener('click', e => {
     const row = e.target.closest('.team-row');
     if (!row) return;
-    const wasEliminated = row.classList.contains('eliminated');
-    if (!wasEliminated) {
-      // Just got eliminated — fire confetti (commiseration!)
-      setTimeout(launchConfetti, 100);
-    }
     setTimeout(updateLeaderBanner, 50);
   });
 }
