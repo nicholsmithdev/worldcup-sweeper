@@ -545,20 +545,104 @@ const fixtures = [
 
 // Confirmed BBC/ITV split (partial - the rest TBC)
 const channelMap = {
+  // June 11
   "Mexico-South Africa": "ITV",
+  // June 12
+  "South Korea-Czechia": "ITV",
   "Canada-Bosnia and Herzegovina": "BBC",
+  // June 13
+  "USA-Paraguay": "BBC",
+  "Qatar-Switzerland": "ITV",
+  "Brazil-Morocco": "BBC",
+  // June 14
   "Haiti-Scotland": "BBC",
-  "Scotland-Morocco": "ITV",
-  "Scotland-Brazil": "BBC",
+  "Australia-Turkiye": "ITV",
+  "Germany-Curacao": "ITV",
+  "Netherlands-Japan": "ITV",
+  // June 15
+  "Ivory Coast-Ecuador": "BBC",
+  "Sweden-Tunisia": "ITV",
+  "Spain-Cape Verde": "ITV",
+  "Belgium-Egypt": "BBC",
+  "Saudi Arabia-Uruguay": "ITV",
+  // June 16
+  "Iran-New Zealand": "BBC",
+  "France-Senegal": "BBC",
+  "Iraq-Norway": "BBC",
+  // June 17
+  "Argentina-Algeria": "ITV",
+  "Austria-Jordan": "BBC",
+  "Portugal-DR Congo": "BBC",
   "England-Croatia": "ITV",
+  // June 18
+  "Ghana-Panama": "ITV",
+  "Uzbekistan-Colombia": "BBC",
+  "South Africa-Czechia": "BBC",
+  "Bosnia and Herzegovina-Switzerland": "ITV",
+  "Canada-Qatar": "ITV",
+  // June 19
+  "Mexico-South Korea": "BBC",
+  "USA-Australia": "BBC",
+  "Scotland-Morocco": "ITV",
+  // June 20
+  "Brazil-Haiti": "ITV",
+  "Paraguay-Turkiye": "ITV",
+  "Netherlands-Sweden": "BBC",
+  "Germany-Ivory Coast": "ITV",
+  // June 21
+  "Ecuador-Curacao": "BBC",
+  "Tunisia-Japan": "BBC",
+  "Spain-Saudi Arabia": "ITV",
+  "Belgium-Iran": "BBC",
+  "Uruguay-Cape Verde": "ITV",
+  // June 22
+  "New Zealand-Egypt": "ITV",
+  "Argentina-Austria": "BBC",
+  // June 23
+  "France-Iraq": "BBC",
+  "Norway-Senegal": "ITV",
+  "Jordan-Algeria": "BBC",
+  "Portugal-Uzbekistan": "ITV",
   "England-Ghana": "BBC",
-  "Panama-England": "ITV"
+  "Panama-Croatia": "ITV",
+  // June 24
+  "Colombia-DR Congo": "BBC",
+  "Switzerland-Canada": "ITV",
+  "Bosnia and Herzegovina-Qatar": "BBC",
+  "Morocco-Haiti": "ITV",
+  "Scotland-Brazil": "BBC",
+  // June 25
+  "South Africa-South Korea": "ITV",
+  "Czechia-Mexico": "BBC",
+  "Ecuador-Germany": "BBC",
+  "Curacao-Ivory Coast": "ITV",
+  // June 26
+  "Tunisia-Netherlands": "BBC",
+  "Japan-Sweden": "ITV",
+  "Turkiye-USA": "BBC",
+  "Paraguay-Australia": "ITV",
+  // June 27
+  "Norway-France": "ITV",
+  "Senegal-Iraq": "BBC",
+  "Cape Verde-Saudi Arabia": "BBC",
+  "Uruguay-Spain": "ITV",
+  "New Zealand-Belgium": "ITV",
+  "Egypt-Iran": "BBC",
+  "Panama-England": "ITV",
+  "Croatia-Ghana": "BBC",
+  "Jordan-Argentina": "BBC",
+  "Algeria-Austria": "ITV",
+  "DR Congo-Portugal": "ITV",
+  "Colombia-Uzbekistan": "BBC"
 };
 
 function getChannel(teams) {
   const key1 = teams[0] + "-" + teams[1];
   const key2 = teams[1] + "-" + teams[0];
-  return channelMap[key1] || channelMap[key2] || "BBC/ITV - TBC";
+  const ch = channelMap[key1] || channelMap[key2];
+  if (!ch) return '<span style="opacity:0.5; font-size:0.75rem;">TBC</span>';
+  const bg = ch === 'BBC' ? '#d6293e' : '#005aaa';
+  return `<span style="background:${bg}; color:#fff; font-family:Bebas Neue,sans-serif; letter-spacing:0.05em; font-size:0.9rem; padding:2px 10px; border-radius:3px;">${ch}</span>`;
 }
 
 // Group stage draw
@@ -711,7 +795,7 @@ function renderFixtures() {
 
     const channelCell = document.createElement('div');
     channelCell.className = 'channel';
-    channelCell.textContent = getChannel(fx.teams);
+    channelCell.innerHTML = getChannel(fx.teams);
 
     row.appendChild(timeCell);
     row.appendChild(teamsCell);
