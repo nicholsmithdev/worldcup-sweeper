@@ -851,6 +851,7 @@ try {
   console.warn('Firebase not configured — running in local mode:', e.message);
   const el = document.getElementById('syncStatus');
   if (el) el.textContent = '🔴 Sync not configured — eliminations are local only';
+}
 
 function toggleEliminated(team) {
   const nowEliminated = !eliminated.has(team);
