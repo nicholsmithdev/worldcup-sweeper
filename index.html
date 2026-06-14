@@ -278,6 +278,15 @@
     flex-wrap: wrap;
   }
 
+  .fixture.past {
+    opacity: 0.35;
+    filter: grayscale(60%);
+  }
+
+  .fixture.next-up {
+    border: 1px solid var(--chalk);
+  }
+
   .fixture.highlight {
     background: rgba(212,160,23,0.12);
     border: 1px solid rgba(212,160,23,0.4);
@@ -617,6 +626,7 @@ function renderFixtures() {
   list.innerHTML = '';
   let currentDay = null;
   let dayDiv = null;
+  let nextUpDone = false;
 
   fixtures.forEach(fx => {
     if (fx.day !== currentDay) {
@@ -636,8 +646,25 @@ function renderFixtures() {
     const owner2 = teamOwner[t2];
     const isHighlight = owner1 || owner2;
 
+    const now = new Date();
+    const kickoff = fixtureDate(fx.day, fx.time);
+    const isPast = kickoff < now;
+
     const row = document.createElement('div');
-    row.className = 'fixture' + (isHighlight ? ' highlight' : '');
+    let classes = 'fixture';
+    if (isPast) classes += ' past';
+    else if (isHighlight) classes += ' highlight';
+    row.className = classes;
+
+    // Add NEXT UP badge to first future fixture
+    if (!isPast && !nextUpDone) {
+      nextUpDone = true;
+      row.classList.add('next-up');
+      const badge = document.createElement('span');
+      badge.textContent = '▶ NEXT UP';
+      badge.style.cssText = 'font-family:Bebas Neue,sans-serif; font-size:0.75rem; background:var(--chalk); color:var(--pitch); border-radius:10px; padding:1px 8px; margin-right:6px; letter-spacing:0.05em;';
+      row.appendChild(badge);
+    }
 
     const teamsCell = document.createElement('div');
     teamsCell.className = 'teams-cell';
@@ -683,7 +710,34 @@ renderSquads();
 renderFixtures();
 renderGroups();
 
-// ---- Live results refresh ----
+// Parse fixture day/time strings into a JS Date (BST = UTC+1)
+function fixtureDate(day, time) {
+  // day e.g. "Thu 11 Jun", time e.g. "8pm", "1.30am", "11pm"
+  const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const parts = day.split(' '); // ["Thu","11","Jun"]
+  const d = parseInt(parts[1], 10);
+  const m = months[parts[2]];
+  const y = 2026;
+
+  // Parse time: "8pm" -> 20:00, "1.30am" -> 01:30, "11pm" -> 23:00, "3am" -> 03:00
+  let hours = 0, mins = 0;
+  const isPm = time.includes('pm');
+  const clean = time.replace('am','').replace('pm','');
+  if (clean.includes('.')) {
+    const [h, mn] = clean.split('.');
+    hours = parseInt(h, 10);
+    mins = parseInt(mn, 10);
+  } else {
+    hours = parseInt(clean, 10);
+  }
+  if (isPm && hours !== 12) hours += 12;
+  if (!isPm && hours === 12) hours = 0;
+
+  // BST = UTC+1, so subtract 1 hour to get UTC for Date constructor
+  return new Date(Date.UTC(y, m, d, hours - 1, mins));
+}
+
+
 const STANDINGS_URL = "https://worldcupwiki.com/standings/";
 const PROXY = "https://api.allorigins.win/raw?url=";
 
