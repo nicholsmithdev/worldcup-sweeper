@@ -848,53 +848,94 @@ async function refreshLiveResults() {
   btn.textContent = 'Fetching...';
   status.textContent = '';
 
+  // Map openfootball team names to our names
+  const ofNameMap = {
+    "Czech Republic": "Czechia",
+    "Turkey": "Turkiye",
+    "Curaçao": "Curacao",
+    "Curacao": "Curacao",
+    "Ivory Coast": "Ivory Coast",
+    "Cote d'Ivoire": "Ivory Coast",
+    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+    "United States": "USA",
+    "USA": "USA",
+    "Korea Republic": "South Korea",
+    "DR Congo": "DR Congo",
+    "Congo DR": "DR Congo"
+  };
+  function normOf(name) {
+    if (!name) return '';
+    name = name.trim();
+    return ofNameMap[name] || name;
+  }
+
   try {
-    // Try worldcup26.ir API first (no auth, CORS enabled)
-    const res = await fetch('https://worldcup26.ir/get/groups');
-    if (!res.ok) throw new Error('API not OK');
+    const res = await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json');
+    if (!res.ok) throw new Error('Fetch failed');
     const data = await res.json();
 
-    // data is array of groups: { name:"A", teams:[...], standings:[{team,played,w,d,l,gf,ga,gd,points}] }
-    let updated = 0;
+    // Build standings from completed match results
+    const standings = {}; // team -> { mp, w, d, l, gf, ga, pts, group }
+
+    function ensure(team, group) {
+      if (!standings[team]) standings[team] = { mp:0, w:0, d:0, l:0, gf:0, ga:0, pts:0, group };
+    }
+
+    (data.matches || []).forEach(m => {
+      // Only process completed matches (those with score1 and score2)
+      if (m.score1 == null || m.score2 == null) return;
+      const t1 = normOf(m.team1);
+      const t2 = normOf(m.team2);
+      const g = m.group || '';
+      const s1 = parseInt(m.score1, 10);
+      const s2 = parseInt(m.score2, 10);
+      if (isNaN(s1) || isNaN(s2)) return;
+
+      ensure(t1, g); ensure(t2, g);
+      standings[t1].mp++; standings[t2].mp++;
+      standings[t1].gf += s1; standings[t1].ga += s2;
+      standings[t2].gf += s2; standings[t2].ga += s1;
+
+      if (s1 > s2) {
+        standings[t1].w++; standings[t1].pts += 3;
+        standings[t2].l++;
+      } else if (s1 < s2) {
+        standings[t2].w++; standings[t2].pts += 3;
+        standings[t1].l++;
+      } else {
+        standings[t1].d++; standings[t1].pts++;
+        standings[t2].d++; standings[t2].pts++;
+      }
+    });
+
+    let updated = Object.keys(standings).length;
     let outCount = 0;
     liveStandings = {};
 
-    const groups = Array.isArray(data) ? data : (data.groups || data.data || []);
-
-    groups.forEach(group => {
-      const standings = group.standings || group.teams || [];
-      standings.forEach(s => {
-        const rawName = s.team?.name || s.team || s.name || '';
-        const team = normalizeApiName(rawName);
-        if (!team) return;
-        liveStandings[team] = {
-          mp: s.played ?? s.mp ?? s.matchesPlayed ?? 0,
-          w: s.w ?? s.won ?? 0,
-          d: s.d ?? s.drawn ?? 0,
-          l: s.l ?? s.lost ?? 0,
-          gf: s.gf ?? s.goalsFor ?? 0,
-          ga: s.ga ?? s.goalsAgainst ?? 0,
-          gd: s.gd ?? s.goalDifference ?? 0,
-          pts: s.points ?? s.pts ?? 0
-        };
-        updated++;
-        if (liveStandings[team].mp === 3 && liveStandings[team].pts === 0) {
-          if (!eliminated.has(team)) { eliminated.add(team); outCount++; }
-        }
-      });
+    Object.entries(standings).forEach(([team, s]) => {
+      liveStandings[team] = {
+        mp: s.mp, w: s.w, d: s.d, l: s.l,
+        gf: s.gf, ga: s.ga, gd: s.gf - s.ga, pts: s.pts
+      };
+      if (s.mp === 3 && s.pts === 0 && !eliminated.has(team)) {
+        eliminated.add(team);
+        outCount++;
+      }
     });
 
     renderSquads();
     renderGroups();
 
     if (updated === 0) {
-      status.textContent = "Got a response but couldn't read standings yet — tournament may not have started. Try again later.";
+      status.textContent = "No completed matches in the data yet — check back after kick-off.";
     } else {
-      status.textContent = `Updated ${updated} teams. ${outCount ? outCount + ' newly knocked out.' : ''} Groups tab now shows live standings.`;
+      const lastUpdated = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      status.textContent = `Standings updated from ${updated} teams with results. ${outCount ? outCount + ' newly knocked out.' : ''} Last fetched: ${lastUpdated}. Hit refresh again for latest.`;
     }
 
   } catch (err) {
-    status.textContent = "Live refresh failed — try BBC or Sky Sports for scores. Manual elimination ticks still work.";
+    status.textContent = "Refresh failed — check BBC or Sky for scores. Manual ticks still work.";
     console.error(err);
   } finally {
     btn.disabled = false;
