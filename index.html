@@ -967,79 +967,83 @@ async function refreshLiveResults(silent = false) {
     status.textContent = '';
   }
 
-  // Map openfootball team names to our names
-  const ofNameMap = {
-    "Czech Republic": "Czechia",
-    "Turkey": "Turkiye",
-    "Curaçao": "Curacao",
-    "Curacao": "Curacao",
-    "Ivory Coast": "Ivory Coast",
-    "Cote d'Ivoire": "Ivory Coast",
-    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
-    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
-    "United States": "USA",
-    "USA": "USA",
-    "Korea Republic": "South Korea",
-    "DR Congo": "DR Congo",
-    "Congo DR": "DR Congo"
+  const espnNameMap = {
+    "United States": "USA", "Mexico": "Mexico", "South Africa": "South Africa",
+    "South Korea": "South Korea", "Czech Republic": "Czechia", "Czechia": "Czechia",
+    "Canada": "Canada", "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+    "Qatar": "Qatar", "Switzerland": "Switzerland", "Brazil": "Brazil",
+    "Morocco": "Morocco", "Haiti": "Haiti", "Scotland": "Scotland",
+    "Australia": "Australia", "Turkey": "Turkiye", "Türkiye": "Turkiye",
+    "Germany": "Germany", "Curaçao": "Curacao", "Netherlands": "Netherlands",
+    "Japan": "Japan", "Ivory Coast": "Ivory Coast", "Ecuador": "Ecuador",
+    "Sweden": "Sweden", "Tunisia": "Tunisia", "Spain": "Spain",
+    "Cape Verde": "Cape Verde", "Belgium": "Belgium", "Egypt": "Egypt",
+    "Saudi Arabia": "Saudi Arabia", "Uruguay": "Uruguay", "Iran": "Iran",
+    "New Zealand": "New Zealand", "France": "France", "Senegal": "Senegal",
+    "Iraq": "Iraq", "Norway": "Norway", "Argentina": "Argentina",
+    "Algeria": "Algeria", "Austria": "Austria", "Jordan": "Jordan",
+    "Portugal": "Portugal", "DR Congo": "DR Congo", "England": "England",
+    "Croatia": "Croatia", "Ghana": "Ghana", "Panama": "Panama",
+    "Colombia": "Colombia", "Uzbekistan": "Uzbekistan", "Paraguay": "Paraguay",
+    "USA": "USA"
   };
-  function normOf(name) {
+
+  function normEspn(name) {
     if (!name) return '';
-    name = name.trim();
-    return ofNameMap[name] || name;
+    return espnNameMap[name.trim()] || name.trim();
   }
 
   try {
-    const res = await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json');
-    if (!res.ok) throw new Error('Fetch failed');
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=200');
+    if (!res.ok) throw new Error('ESPN fetch failed');
     const data = await res.json();
 
-    // Build standings from completed match results
-    const standings = {}; // team -> { mp, w, d, l, gf, ga, pts, group }
-
-    function ensure(team, group) {
-      if (!standings[team]) standings[team] = { mp:0, w:0, d:0, l:0, gf:0, ga:0, pts:0, group };
-    }
-
-    // Sort matches by date so results appear in chronological order
-    const completedMatches = (data.matches || [])
-      .filter(m => m.score1 != null && m.score2 != null)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-
+    const standings = {};
     teamResults = {};
 
-    completedMatches.forEach(m => {
-      const t1 = normOf(m.team1);
-      const t2 = normOf(m.team2);
-      const g = m.group || '';
-      const s1 = parseInt(m.score1, 10);
-      const s2 = parseInt(m.score2, 10);
-      if (isNaN(s1) || isNaN(s2)) return;
+    function ensure(team) {
+      if (!standings[team]) standings[team] = { mp:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    }
 
-      ensure(t1, g); ensure(t2, g);
+    // Sort events by date
+    const events = (data.events || []).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    events.forEach(event => {
+      const comp = event.competitions?.[0];
+      if (!comp) return;
+      if (!comp.status?.type?.completed) return;
+
+      const competitors = comp.competitors || [];
+      if (competitors.length !== 2) return;
+
+      const c1 = competitors.find(c => c.homeAway === 'home') || competitors[0];
+      const c2 = competitors.find(c => c.homeAway === 'away') || competitors[1];
+
+      const t1 = normEspn(c1.team?.displayName);
+      const t2 = normEspn(c2.team?.displayName);
+      const s1 = parseInt(c1.score, 10);
+      const s2 = parseInt(c2.score, 10);
+
+      if (!t1 || !t2 || isNaN(s1) || isNaN(s2)) return;
+
+      ensure(t1); ensure(t2);
       standings[t1].mp++; standings[t2].mp++;
       standings[t1].gf += s1; standings[t1].ga += s2;
       standings[t2].gf += s2; standings[t2].ga += s1;
 
-      // Result tracking
       if (!teamResults[t1]) teamResults[t1] = [];
       if (!teamResults[t2]) teamResults[t2] = [];
 
       if (s1 > s2) {
-        standings[t1].w++; standings[t1].pts += 3;
-        standings[t2].l++;
-        teamResults[t1].push('W');
-        teamResults[t2].push('L');
+        standings[t1].w++; standings[t1].pts += 3; standings[t2].l++;
+        teamResults[t1].push('W'); teamResults[t2].push('L');
       } else if (s1 < s2) {
-        standings[t2].w++; standings[t2].pts += 3;
-        standings[t1].l++;
-        teamResults[t1].push('L');
-        teamResults[t2].push('W');
+        standings[t2].w++; standings[t2].pts += 3; standings[t1].l++;
+        teamResults[t1].push('L'); teamResults[t2].push('W');
       } else {
         standings[t1].d++; standings[t1].pts++;
         standings[t2].d++; standings[t2].pts++;
-        teamResults[t1].push('D');
-        teamResults[t2].push('D');
+        teamResults[t1].push('D'); teamResults[t2].push('D');
       }
     });
 
@@ -1062,14 +1066,14 @@ async function refreshLiveResults(silent = false) {
     renderGroups();
 
     if (updated === 0) {
-      status.textContent = "No completed matches in the data yet — check back after kick-off.";
+      if (!silent) status.textContent = "No completed matches found yet — try again after a game finishes.";
     } else {
       const lastUpdated = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-      status.textContent = `Standings updated from ${updated} teams with results. ${outCount ? outCount + ' newly knocked out.' : ''} Last fetched: ${lastUpdated}. Hit refresh again for latest.`;
+      if (!silent) status.textContent = `Updated ${updated} teams. ${outCount ? outCount + ' newly knocked out.' : ''} Last fetched: ${lastUpdated}.`;
     }
 
   } catch (err) {
-    status.textContent = "Refresh failed — check BBC or Sky for scores. Manual ticks still work.";
+    if (!silent) status.textContent = "Refresh failed — check BBC or Sky for scores. Manual ticks still work.";
     console.error(err);
   } finally {
     if (!silent) {
