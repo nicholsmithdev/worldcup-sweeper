@@ -245,6 +245,19 @@
     font-size: 1.1rem;
   }
 
+  .result-dots {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+    margin-right: 6px;
+    align-items: center;
+  }
+
+  .result-dot {
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
   .team-row .cross {
     color: var(--red);
     font-weight: bold;
@@ -407,7 +420,15 @@
   <!-- MY TEAMS VIEW -->
   <div class="view active" id="myteams">
     <div class="squad-grid" id="squadGrid"></div>
-    <p class="hint">Tap a team to toggle eliminated &#10060; / still in. Resets if you reload the page &mdash; this is just for following along live.</p>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin:10px 0 4px; font-size:0.78rem; opacity:0.8; padding:10px 14px; border:1px solid var(--line); border-radius:4px; background:rgba(0,0,0,0.1);">
+      <strong style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.05em; color:var(--gold);">Key</strong>
+      <span>✅ Win</span>
+      <span>⚽ Draw</span>
+      <span>❌ Loss</span>
+      <span style="opacity:0.5">· Not played yet</span>
+      <span style="margin-left:auto; opacity:0.7">Tap any team to mark it OUT &#10060;</span>
+    </div>
+    <p class="hint">Results fill in automatically when you hit Refresh Live Results above.</p>
   </div>
 
   <!-- FIXTURES VIEW -->
@@ -673,6 +694,8 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // ---- Eliminated state ----
 const eliminated = new Set();
+// teamResults: { "TeamName": ["W","D","L", ...] } — filled on refresh
+let teamResults = {};
 
 function renderSquads() {
   const grid = document.getElementById('squadGrid');
@@ -713,7 +736,17 @@ function renderSquads() {
       const row = document.createElement('div');
       row.className = 'team-row' + (eliminated.has(team) ? ' eliminated' : '');
       const flag = flags[team] || '';
-      row.innerHTML = `<span><span class="flag">${flag}</span>${team}</span><span class="cross">&#10060;</span>`;
+
+      // Result dots: W=✅ D=⚽ L=❌, up to 3 group games
+      const results = teamResults[team] || [];
+      const dots = [0,1,2].map(i => {
+        if (results[i] === 'W') return '<span class="result-dot">✅</span>';
+        if (results[i] === 'L') return '<span class="result-dot">❌</span>';
+        if (results[i] === 'D') return '<span class="result-dot">⚽</span>';
+        return '<span class="result-dot" style="opacity:0.2">·</span>';
+      }).join('');
+
+      row.innerHTML = `<span><span class="flag">${flag}</span>${team}</span><span class="result-dots">${dots}</span><span class="cross">&#10060;</span>`;
       row.addEventListener('click', () => {
         if (eliminated.has(team)) eliminated.delete(team);
         else eliminated.add(team);
@@ -925,12 +958,14 @@ function normalizeApiName(name) {
   return apiNameMap[name] || name;
 }
 
-async function refreshLiveResults() {
+async function refreshLiveResults(silent = false) {
   const btn = document.getElementById('refreshBtn');
   const status = document.getElementById('refreshStatus');
-  btn.disabled = true;
-  btn.textContent = 'Fetching...';
-  status.textContent = '';
+  if (!silent) {
+    btn.disabled = true;
+    btn.textContent = 'Fetching...';
+    status.textContent = '';
+  }
 
   // Map openfootball team names to our names
   const ofNameMap = {
@@ -966,9 +1001,14 @@ async function refreshLiveResults() {
       if (!standings[team]) standings[team] = { mp:0, w:0, d:0, l:0, gf:0, ga:0, pts:0, group };
     }
 
-    (data.matches || []).forEach(m => {
-      // Only process completed matches (those with score1 and score2)
-      if (m.score1 == null || m.score2 == null) return;
+    // Sort matches by date so results appear in chronological order
+    const completedMatches = (data.matches || [])
+      .filter(m => m.score1 != null && m.score2 != null)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    teamResults = {};
+
+    completedMatches.forEach(m => {
       const t1 = normOf(m.team1);
       const t2 = normOf(m.team2);
       const g = m.group || '';
@@ -981,15 +1021,25 @@ async function refreshLiveResults() {
       standings[t1].gf += s1; standings[t1].ga += s2;
       standings[t2].gf += s2; standings[t2].ga += s1;
 
+      // Result tracking
+      if (!teamResults[t1]) teamResults[t1] = [];
+      if (!teamResults[t2]) teamResults[t2] = [];
+
       if (s1 > s2) {
         standings[t1].w++; standings[t1].pts += 3;
         standings[t2].l++;
+        teamResults[t1].push('W');
+        teamResults[t2].push('L');
       } else if (s1 < s2) {
         standings[t2].w++; standings[t2].pts += 3;
         standings[t1].l++;
+        teamResults[t1].push('L');
+        teamResults[t2].push('W');
       } else {
         standings[t1].d++; standings[t1].pts++;
         standings[t2].d++; standings[t2].pts++;
+        teamResults[t1].push('D');
+        teamResults[t2].push('D');
       }
     });
 
@@ -1022,12 +1072,17 @@ async function refreshLiveResults() {
     status.textContent = "Refresh failed — check BBC or Sky for scores. Manual ticks still work.";
     console.error(err);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Refresh Live Results';
+    if (!silent) {
+      btn.disabled = false;
+      btn.textContent = 'Refresh Live Results';
+    }
   }
 }
 
 document.getElementById('refreshBtn').addEventListener('click', refreshLiveResults);
+
+// Auto-fetch on page load so results show straight away
+refreshLiveResults(true);
 </script>
 </body>
 </html>
