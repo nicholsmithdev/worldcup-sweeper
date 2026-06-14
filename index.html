@@ -408,6 +408,93 @@
     margin-top: 8px;
   }
 
+  /* Leader banner */
+  .leader-banner {
+    text-align: center;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(212,160,23,0.15), rgba(214,41,62,0.1));
+    border: 1px solid rgba(255,255,255,0.2);
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 1.1rem;
+    display: none;
+  }
+
+  .leader-banner span { color: var(--gold); font-size: 1.4rem; }
+
+  /* Countdown */
+  .countdown-bar {
+    text-align: center;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--line);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .countdown-bar .countdown-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* Live score in fixture */
+  .fixture .live-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    background: rgba(214,41,62,0.2);
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin: 0 6px;
+    white-space: nowrap;
+  }
+
+  .fixture .final-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin: 0 6px;
+    white-space: nowrap;
+    opacity: 0.7;
+  }
+
+  /* Form dots in groups */
+  .form-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 1px;
+    vertical-align: middle;
+  }
+
+  .form-dot.W { background: #27ae60; }
+  .form-dot.D { background: #888; }
+  .form-dot.L { background: var(--red); }
+
+  /* Confetti canvas */
+  #confettiCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
   footer {
     text-align: center;
     font-size: 0.72rem;
@@ -417,6 +504,7 @@
 </style>
 </head>
 <body>
+<canvas id="confettiCanvas"></canvas>
 <div class="wrap">
   <header>
     <h1>🇺🇸 Nichol Smith Development Sweeper Tracker</h1>
@@ -431,6 +519,15 @@
       <a href="https://www.flashscore.co.uk/football/world/world-cup/" target="_blank" rel="noopener" class="live-link">FlashScore</a>
     </div>
   </header>
+
+  <!-- Leader banner -->
+  <div class="leader-banner" id="leaderBanner"></div>
+
+  <!-- Countdown to next game -->
+  <div class="countdown-bar" id="countdownBar">
+    <div id="countdownLabel"></div>
+    <span class="countdown-time" id="countdownTime"></span>
+  </div>
 
   <div class="tabs">
     <div class="tab active" data-tab="myteams">My Teams</div>
@@ -838,8 +935,23 @@ function renderFixtures() {
 
     const teamsCell = document.createElement('div');
     teamsCell.className = 'teams-cell';
+
+    // Check for live or final score
+    const t1norm = normalizeTeam(fx.teams[0]);
+    const t2norm = normalizeTeam(fx.teams[1]);
+    const scoreKey = t1norm + '|||' + t2norm;
+    const scoreData = liveScores[scoreKey];
+    let scoreHtml = '';
+    if (scoreData && !scoreData.flipped) {
+      if (scoreData.completed) {
+        scoreHtml = `<span class="final-score">${scoreData.score1} - ${scoreData.score2} FT</span>`;
+      } else if (scoreData.state === 'in') {
+        scoreHtml = `<span class="live-score">${scoreData.score1} - ${scoreData.score2} <span style="font-size:0.7rem;opacity:0.8;">${scoreData.minute}</span></span>`;
+      }
+    }
+
     teamsCell.innerHTML =
-      `${flags[normalizeTeam(fx.teams[0])] || ''} ${fx.teams[0]}${owner1 ? `<span class="owner-tag">${owner1}</span>` : ''} vs ` +
+      `${flags[normalizeTeam(fx.teams[0])] || ''} ${fx.teams[0]}${owner1 ? `<span class="owner-tag">${owner1}</span>` : ''}${scoreHtml} vs ` +
       `${flags[normalizeTeam(fx.teams[1])] || ''} ${fx.teams[1]}${owner2 ? `<span class="owner-tag">${owner2}</span>` : ''} ` +
       `<span style="opacity:0.6; font-size:0.75rem;">(Grp ${fx.group}, ${fx.venue})</span>`;
 
@@ -883,7 +995,7 @@ function renderGroups() {
     if (hasLive) {
       let html = `<table class="group-table">
         <tr>
-          <td colspan="9" class="group-title">Group ${letter}</td>
+          <td colspan="10" class="group-title">Group ${letter}</td>
         </tr>
         <tr>
           <th class="team-col">Team</th>
@@ -896,6 +1008,7 @@ function renderGroups() {
           <th class="num-col" title="Goals Against">GA</th>
           <th class="num-col" title="Goal Difference">GD</th>
           <th class="num-col" title="Points" style="color:var(--gold);">Pts</th>
+          <th class="num-col" title="Form" style="min-width:50px;">Form</th>
         </tr>`;
       sorted.forEach((t, idx) => {
         const norm = normalizeTeam(t);
@@ -910,6 +1023,7 @@ function renderGroups() {
         const gf = s.gf ?? '-';
         const ga = s.ga ?? '-';
         const gd = s.gd != null ? (s.gd > 0 ? '+' + s.gd : s.gd) : '-';
+        const form = formDots(t);
         const rowStyle = idx < 2 ? 'background:rgba(255,255,255,0.07);' : idx === 3 ? 'opacity:0.5;' : '';
         html += `<tr style="${rowStyle}">
           <td class="team-col">${flag} ${t}</td>
@@ -922,6 +1036,7 @@ function renderGroups() {
           <td class="num-col">${ga}</td>
           <td class="num-col">${gd}</td>
           <td class="num-col" style="font-weight:bold;color:var(--gold);">${pts}</td>
+          <td class="num-col">${form}</td>
         </tr>`;
       });
       html += '</table>';
@@ -989,40 +1104,33 @@ function normalizeApiName(name) {
   return apiNameMap[name] || name;
 }
 
+// ESPN team name normalizer (global)
+const espnNameMap = {
+  "United States": "USA", "Mexico": "Mexico", "South Africa": "South Africa",
+  "South Korea": "South Korea", "Czech Republic": "Czechia", "Czechia": "Czechia",
+  "Canada": "Canada", "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+  "Qatar": "Qatar", "Switzerland": "Switzerland", "Brazil": "Brazil",
+  "Morocco": "Morocco", "Haiti": "Haiti", "Scotland": "Scotland",
+  "Australia": "Australia", "Turkey": "Turkiye", "Türkiye": "Turkiye",
+  "Germany": "Germany", "Curaçao": "Curacao", "Netherlands": "Netherlands",
+  "Japan": "Japan", "Ivory Coast": "Ivory Coast", "Ecuador": "Ecuador",
+  "Sweden": "Sweden", "Tunisia": "Tunisia", "Spain": "Spain",
+  "Cape Verde": "Cape Verde", "Belgium": "Belgium", "Egypt": "Egypt",
+  "Saudi Arabia": "Saudi Arabia", "Uruguay": "Uruguay", "Iran": "Iran",
+  "New Zealand": "New Zealand", "France": "France", "Senegal": "Senegal",
+  "Iraq": "Iraq", "Norway": "Norway", "Argentina": "Argentina",
+  "Algeria": "Algeria", "Austria": "Austria", "Jordan": "Jordan",
+  "Portugal": "Portugal", "DR Congo": "DR Congo", "England": "England",
+  "Croatia": "Croatia", "Ghana": "Ghana", "Panama": "Panama",
+  "Colombia": "Colombia", "Uzbekistan": "Uzbekistan", "Paraguay": "Paraguay",
+  "USA": "USA"
+};
+function normEspn(name) {
+  if (!name) return '';
+  return espnNameMap[name.trim()] || name.trim();
+}
+
 async function refreshLiveResults(silent = false) {
-  const btn = document.getElementById('refreshBtn');
-  const status = document.getElementById('refreshStatus');
-  if (!silent) {
-    btn.disabled = true;
-    btn.textContent = 'Fetching...';
-    status.textContent = '';
-  }
-
-  const espnNameMap = {
-    "United States": "USA", "Mexico": "Mexico", "South Africa": "South Africa",
-    "South Korea": "South Korea", "Czech Republic": "Czechia", "Czechia": "Czechia",
-    "Canada": "Canada", "Bosnia & Herzegovina": "Bosnia and Herzegovina",
-    "Qatar": "Qatar", "Switzerland": "Switzerland", "Brazil": "Brazil",
-    "Morocco": "Morocco", "Haiti": "Haiti", "Scotland": "Scotland",
-    "Australia": "Australia", "Turkey": "Turkiye", "Türkiye": "Turkiye",
-    "Germany": "Germany", "Curaçao": "Curacao", "Netherlands": "Netherlands",
-    "Japan": "Japan", "Ivory Coast": "Ivory Coast", "Ecuador": "Ecuador",
-    "Sweden": "Sweden", "Tunisia": "Tunisia", "Spain": "Spain",
-    "Cape Verde": "Cape Verde", "Belgium": "Belgium", "Egypt": "Egypt",
-    "Saudi Arabia": "Saudi Arabia", "Uruguay": "Uruguay", "Iran": "Iran",
-    "New Zealand": "New Zealand", "France": "France", "Senegal": "Senegal",
-    "Iraq": "Iraq", "Norway": "Norway", "Argentina": "Argentina",
-    "Algeria": "Algeria", "Austria": "Austria", "Jordan": "Jordan",
-    "Portugal": "Portugal", "DR Congo": "DR Congo", "England": "England",
-    "Croatia": "Croatia", "Ghana": "Ghana", "Panama": "Panama",
-    "Colombia": "Colombia", "Uzbekistan": "Uzbekistan", "Paraguay": "Paraguay",
-    "USA": "USA"
-  };
-
-  function normEspn(name) {
-    if (!name) return '';
-    return espnNameMap[name.trim()] || name.trim();
-  }
 
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=200');
@@ -1095,6 +1203,8 @@ async function refreshLiveResults(silent = false) {
 
     renderSquads();
     renderGroups();
+    updateFixtureScores(events);
+    updateLeaderBanner();
 
     if (updated === 0) {
       if (!silent) status.textContent = "No completed matches found yet — try again after a game finishes.";
@@ -1118,6 +1228,222 @@ document.getElementById('refreshBtn').addEventListener('click', refreshLiveResul
 
 // Auto-fetch on page load so results show straight away
 refreshLiveResults(true);
+
+// ============================================================
+// CONFETTI
+// ============================================================
+const confettiCanvas = document.getElementById('confettiCanvas');
+const ctx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+let confettiActive = false;
+
+function resizeConfetti() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+resizeConfetti();
+window.addEventListener('resize', resizeConfetti);
+
+function launchConfetti() {
+  confettiPieces = [];
+  confettiActive = true;
+  const colors = ['#d6293e','#ffffff','#0a2351','#d4a017','#27ae60'];
+  for (let i = 0; i < 120; i++) {
+    confettiPieces.push({
+      x: Math.random() * confettiCanvas.width,
+      y: -10 - Math.random() * 200,
+      w: 8 + Math.random() * 8,
+      h: 4 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.2,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 4,
+      alpha: 1
+    });
+  }
+  animateConfetti();
+  setTimeout(() => { confettiActive = false; }, 3500);
+}
+
+function animateConfetti() {
+  if (!confettiActive && confettiPieces.every(p => p.alpha <= 0)) return;
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiPieces.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.angle += p.spin;
+    if (!confettiActive) p.alpha = Math.max(0, p.alpha - 0.015);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+  });
+  requestAnimationFrame(animateConfetti);
+}
+
+// Patch renderSquads to fire confetti on elimination
+const _origRenderSquads = renderSquads;
+// We'll call launchConfetti from within the click handler instead
+// (already handled below by patching the eliminated toggle)
+
+// ============================================================
+// LEADER BANNER
+// ============================================================
+function updateLeaderBanner() {
+  const banner = document.getElementById('leaderBanner');
+  const ranked = Object.entries(squads).map(([owner, teams]) => {
+    const alive = teams.filter(t => !eliminated.has(t)).length;
+    return { owner, alive };
+  }).sort((a, b) => b.alive - a.alive);
+
+  if (ranked[0] && ranked[0].alive > 0) {
+    const leader = ranked[0];
+    const isTied = ranked.filter(r => r.alive === leader.alive).length > 1;
+    banner.style.display = 'block';
+    if (isTied) {
+      const tiedNames = ranked.filter(r => r.alive === leader.alive).map(r => r.owner).join(', ');
+      banner.innerHTML = `🏆 <span>${tiedNames}</span> are level at the top — ${leader.alive}/6 teams remaining`;
+    } else {
+      banner.innerHTML = `🏆 <span>${leader.owner}</span> is leading the sweeper with ${leader.alive}/6 teams remaining`;
+    }
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ============================================================
+// COUNTDOWN TO NEXT GAME
+// ============================================================
+let countdownInterval = null;
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(tickCountdown, 1000);
+  tickCountdown();
+}
+
+function tickCountdown() {
+  const bar = document.getElementById('countdownBar');
+  const label = document.getElementById('countdownLabel');
+  const timeEl = document.getElementById('countdownTime');
+  const now = new Date();
+
+  // Find next upcoming fixture
+  let nextFx = null;
+  for (const fx of fixtures) {
+    const ko = fixtureDate(fx.day, fx.time);
+    if (ko > now) { nextFx = { fx, ko }; break; }
+  }
+
+  if (!nextFx) { bar.style.display = 'none'; return; }
+
+  const diff = nextFx.ko - now;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+
+  const t1owner = teamOwner[normalizeTeam(nextFx.fx.teams[0])];
+  const t2owner = teamOwner[normalizeTeam(nextFx.fx.teams[1])];
+  const ownerBits = [t1owner, t2owner].filter(Boolean);
+  const sweepNote = ownerBits.length ? ` (${ownerBits.join(' vs ')})` : '';
+
+  bar.style.display = 'block';
+  label.innerHTML = `⏱ Next kick-off: <strong>${nextFx.fx.teams[0]} vs ${nextFx.fx.teams[1]}</strong>${sweepNote} — ${nextFx.fx.day}, ${nextFx.fx.time} BST`;
+  timeEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ============================================================
+// LIVE SCORES IN FIXTURES
+// ============================================================
+let liveScores = {}; // "Team1-Team2" -> { score1, score2, status, minute }
+
+function updateFixtureScores(events) {
+  liveScores = {};
+  (events || []).forEach(event => {
+    const comp = event.competitions?.[0];
+    if (!comp) return;
+    const c1 = comp.competitors?.find(c => c.homeAway === 'home') || comp.competitors?.[0];
+    const c2 = comp.competitors?.find(c => c.homeAway === 'away') || comp.competitors?.[1];
+    if (!c1 || !c2) return;
+    const t1 = normEspn(c1.team?.displayName);
+    const t2 = normEspn(c2.team?.displayName);
+    const status = comp.status?.type;
+    const score1 = c1.score;
+    const score2 = c2.score;
+    const minute = comp.status?.displayClock;
+    if (status?.state === 'in' || status?.completed) {
+      liveScores[t1 + '|||' + t2] = { score1, score2, completed: status.completed, minute, state: status.state };
+      liveScores[t2 + '|||' + t1] = { score1: score2, score2: score1, completed: status.completed, minute, state: status.state, flipped: true };
+    }
+  });
+  renderFixtures();
+}
+
+// ============================================================
+// FORM DOTS IN GROUPS
+// ============================================================
+function formDots(team) {
+  const results = teamResults[team] || [];
+  if (!results.length) return '';
+  return results.map(r => `<span class="form-dot ${r}" title="${r === 'W' ? 'Win' : r === 'D' ? 'Draw' : 'Loss'}"></span>`).join('');
+}
+
+// Patch renderGroups to include form dots
+const _origRenderGroups = renderGroups;
+function renderGroupsWithForm() {
+  _origRenderGroups();
+  // Form dots are now injected directly in renderGroups via liveStandings
+  // (handled inline in the table generation above)
+}
+
+// ============================================================
+// WIRE EVERYTHING TOGETHER
+// ============================================================
+
+// Patch eliminated toggle to fire confetti and update banner
+function patchSquadElimination() {
+  // Overwrite renderSquads to wire confetti + banner update
+  const grid = document.getElementById('squadGrid');
+  // Done via event delegation — confetti fires when clicking a non-eliminated team row
+  grid.addEventListener('click', e => {
+    const row = e.target.closest('.team-row');
+    if (!row) return;
+    const wasEliminated = row.classList.contains('eliminated');
+    if (!wasEliminated) {
+      // Just got eliminated — fire confetti (commiseration!)
+      setTimeout(launchConfetti, 100);
+    }
+    setTimeout(updateLeaderBanner, 50);
+  });
+}
+
+// Update refreshLiveResults to also pass ESPN events for live scores
+const _origRefresh = refreshLiveResults;
+// We patch the ESPN fetch to also store events for live scores
+// by modifying the response handling — done by re-patching below
+
+// Actually patch by wrapping the existing refresh call at the bottom
+const origRefreshFn = refreshLiveResults;
+window._espnEvents = [];
+
+// Override the fetch inside refreshLiveResults to capture events
+// We do this by monkey-patching after the fact
+function refreshAndUpdate(silent = false) {
+  return origRefreshFn(silent).then ? origRefreshFn(silent) : Promise.resolve();
+}
+
+// Kick everything off
+startCountdown();
+updateLeaderBanner();
+patchSquadElimination();
+
+// Also update leader banner whenever squads re-render
+const squadObserver = new MutationObserver(updateLeaderBanner);
+squadObserver.observe(document.getElementById('squadGrid'), { childList: true, subtree: false });
 </script>
 </body>
 </html>
