@@ -814,6 +814,14 @@ document.querySelectorAll('.tab').forEach(tab => {
 const eliminated = new Set();
 // teamResults: { "TeamName": ["W","D","L", ...] } — filled on refresh
 let teamResults = {};
+let liveScores = {}; // "Team1|||Team2" -> { score1, score2, completed, minute, state }
+
+// Form dots helper — must be defined before renderGroups
+function formDots(team) {
+  const results = teamResults[team] || [];
+  if (!results.length) return '';
+  return results.map(r => `<span class="form-dot ${r}" title="${r === 'W' ? 'Win' : r === 'D' ? 'Draw' : 'Loss'}"></span>`).join('');
+}
 
 function renderSquads() {
   const grid = document.getElementById('squadGrid');
@@ -1359,7 +1367,7 @@ function tickCountdown() {
 // ============================================================
 // LIVE SCORES IN FIXTURES
 // ============================================================
-let liveScores = {}; // "Team1-Team2" -> { score1, score2, status, minute }
+// liveScores declared at top of script
 
 function updateFixtureScores(events) {
   liveScores = {};
@@ -1384,13 +1392,7 @@ function updateFixtureScores(events) {
 }
 
 // ============================================================
-// FORM DOTS IN GROUPS
-// ============================================================
-function formDots(team) {
-  const results = teamResults[team] || [];
-  if (!results.length) return '';
-  return results.map(r => `<span class="form-dot ${r}" title="${r === 'W' ? 'Win' : r === 'D' ? 'Draw' : 'Loss'}"></span>`).join('');
-}
+// FORM DOTS — defined earlier at top of script
 
 // Patch renderGroups to include form dots
 const _origRenderGroups = renderGroups;
