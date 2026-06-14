@@ -359,25 +359,46 @@
   .group-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
   }
 
   .group-table th, .group-table td {
     border: 1px solid var(--line);
-    padding: 6px 8px;
+    padding: 5px 6px;
     text-align: left;
+    white-space: nowrap;
+  }
+
+  .group-table .team-col {
+    min-width: 90px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .group-table .num-col {
+    text-align: center;
+    width: 28px;
   }
 
   .group-table th {
     color: var(--gold);
     font-family: 'Bebas Neue', sans-serif;
     letter-spacing: 0.05em;
+    font-size: 0.9rem;
+  }
+
+  .group-table .group-title {
+    font-family: 'Bebas Neue', sans-serif;
     font-size: 1rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    padding: 6px 8px;
+    background: rgba(0,0,0,0.2);
   }
 
   .groups-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 12px;
   }
 
@@ -862,13 +883,19 @@ function renderGroups() {
     if (hasLive) {
       let html = `<table class="group-table">
         <tr>
-          <th colspan="2" style="font-size:1rem;">Group ${letter}</th>
-          <th style="text-align:center" title="Played">P</th>
-          <th style="text-align:center" title="Won">W</th>
-          <th style="text-align:center" title="Drawn">D</th>
-          <th style="text-align:center" title="Lost">L</th>
-          <th style="text-align:center" title="Goal Difference">GD</th>
-          <th style="text-align:center; color:var(--gold)" title="Points">Pts</th>
+          <td colspan="9" class="group-title">Group ${letter}</td>
+        </tr>
+        <tr>
+          <th class="team-col">Team</th>
+          <th class="num-col" style="width:60px;">Owner</th>
+          <th class="num-col" title="Played">P</th>
+          <th class="num-col" title="Won">W</th>
+          <th class="num-col" title="Drawn">D</th>
+          <th class="num-col" title="Lost">L</th>
+          <th class="num-col" title="Goals For">GF</th>
+          <th class="num-col" title="Goals Against">GA</th>
+          <th class="num-col" title="Goal Difference">GD</th>
+          <th class="num-col" title="Points" style="color:var(--gold);">Pts</th>
         </tr>`;
       sorted.forEach((t, idx) => {
         const norm = normalizeTeam(t);
@@ -880,17 +907,21 @@ function renderGroups() {
         const w = s.w ?? '-';
         const d = s.d ?? '-';
         const l = s.l ?? '-';
+        const gf = s.gf ?? '-';
+        const ga = s.ga ?? '-';
         const gd = s.gd != null ? (s.gd > 0 ? '+' + s.gd : s.gd) : '-';
         const rowStyle = idx < 2 ? 'background:rgba(255,255,255,0.07);' : idx === 3 ? 'opacity:0.5;' : '';
         html += `<tr style="${rowStyle}">
-          <td>${flag} ${t}</td>
-          <td>${owner ? `<span class="owner-tag">${owner}</span>` : ''}</td>
-          <td style="text-align:center">${mp}</td>
-          <td style="text-align:center">${w}</td>
-          <td style="text-align:center">${d}</td>
-          <td style="text-align:center">${l}</td>
-          <td style="text-align:center">${gd}</td>
-          <td style="text-align:center; font-weight:bold; color:var(--gold)">${pts}</td>
+          <td class="team-col">${flag} ${t}</td>
+          <td class="num-col">${owner ? `<span class="owner-tag" style="font-size:0.65rem;padding:1px 5px;">${owner}</span>` : ''}</td>
+          <td class="num-col">${mp}</td>
+          <td class="num-col">${w}</td>
+          <td class="num-col">${d}</td>
+          <td class="num-col">${l}</td>
+          <td class="num-col">${gf}</td>
+          <td class="num-col">${ga}</td>
+          <td class="num-col">${gd}</td>
+          <td class="num-col" style="font-weight:bold;color:var(--gold);">${pts}</td>
         </tr>`;
       });
       html += '</table>';
