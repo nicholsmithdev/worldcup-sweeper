@@ -278,9 +278,25 @@
     flex-wrap: wrap;
   }
 
-  .fixture.past {
-    opacity: 0.35;
-    filter: grayscale(60%);
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.2s ease-in-out infinite;
+    vertical-align: middle;
+  }
+
+  .fixture.live {
+    background: rgba(214,41,62,0.12);
+    border: 1px solid rgba(214,41,62,0.5);
   }
 
   .fixture.next-up {
@@ -648,16 +664,27 @@ function renderFixtures() {
 
     const now = new Date();
     const kickoff = fixtureDate(fx.day, fx.time);
-    const isPast = kickoff < now;
+    const minsElapsed = (now - kickoff) / 60000;
+    const isPast = minsElapsed > 120;
+    const isLive = minsElapsed >= 0 && minsElapsed <= 120;
 
     const row = document.createElement('div');
     let classes = 'fixture';
     if (isPast) classes += ' past';
+    else if (isLive) classes += ' live';
     else if (isHighlight) classes += ' highlight';
     row.className = classes;
 
+    // LIVE badge
+    if (isLive) {
+      const badge = document.createElement('span');
+      badge.innerHTML = '<span class="live-dot"></span><span style="font-family:Bebas Neue,sans-serif; font-size:0.75rem; color:var(--red); letter-spacing:0.05em;">LIVE</span>';
+      badge.style.marginRight = '6px';
+      row.appendChild(badge);
+    }
+
     // Add NEXT UP badge to first future fixture
-    if (!isPast && !nextUpDone) {
+    if (!isLive && !isPast && !nextUpDone) {
       nextUpDone = true;
       row.classList.add('next-up');
       const badge = document.createElement('span');
