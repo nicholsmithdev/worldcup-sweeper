@@ -715,20 +715,75 @@ function renderFixtures() {
   });
 }
 
+// liveStandings: { "TeamName": { mp, w, d, l, gf, ga, gd, pts } }
+let liveStandings = {};
+
 function renderGroups() {
   const grid = document.getElementById('groupsGrid');
   grid.innerHTML = '';
+  const hasLive = Object.keys(liveStandings).length > 0;
+
   Object.entries(groupDraw).forEach(([letter, teams]) => {
     const panel = document.createElement('div');
     panel.className = 'panel';
-    let html = `<table class="group-table"><tr><th colspan="2">Group ${letter}</th></tr>`;
-    teams.forEach(t => {
-      const owner = teamOwner[normalizeTeam(t)];
-      const flag = flags[normalizeTeam(t)] || '';
-      html += `<tr><td>${flag} ${t}</td><td>${owner ? `<span class="owner-tag">${owner}</span>` : ''}</td></tr>`;
+
+    const sorted = [...teams].sort((a, b) => {
+      const sa = liveStandings[a];
+      const sb = liveStandings[b];
+      if (!sa || !sb) return 0;
+      if (sb.pts !== sa.pts) return sb.pts - sa.pts;
+      if (sb.gd !== sa.gd) return sb.gd - sa.gd;
+      if (sb.gf !== sa.gf) return sb.gf - sa.gf;
+      return 0;
     });
-    html += '</table>';
-    panel.innerHTML = html;
+
+    if (hasLive) {
+      let html = `<table class="group-table">
+        <tr>
+          <th colspan="2" style="font-size:1rem;">Group ${letter}</th>
+          <th style="text-align:center" title="Played">P</th>
+          <th style="text-align:center" title="Won">W</th>
+          <th style="text-align:center" title="Drawn">D</th>
+          <th style="text-align:center" title="Lost">L</th>
+          <th style="text-align:center" title="Goal Difference">GD</th>
+          <th style="text-align:center; color:var(--gold)" title="Points">Pts</th>
+        </tr>`;
+      sorted.forEach((t, idx) => {
+        const norm = normalizeTeam(t);
+        const owner = teamOwner[norm];
+        const flag = flags[norm] || '';
+        const s = liveStandings[t] || {};
+        const pts = s.pts ?? '-';
+        const mp = s.mp ?? '-';
+        const w = s.w ?? '-';
+        const d = s.d ?? '-';
+        const l = s.l ?? '-';
+        const gd = s.gd != null ? (s.gd > 0 ? '+' + s.gd : s.gd) : '-';
+        const rowStyle = idx < 2 ? 'background:rgba(255,255,255,0.07);' : idx === 3 ? 'opacity:0.5;' : '';
+        html += `<tr style="${rowStyle}">
+          <td>${flag} ${t}</td>
+          <td>${owner ? `<span class="owner-tag">${owner}</span>` : ''}</td>
+          <td style="text-align:center">${mp}</td>
+          <td style="text-align:center">${w}</td>
+          <td style="text-align:center">${d}</td>
+          <td style="text-align:center">${l}</td>
+          <td style="text-align:center">${gd}</td>
+          <td style="text-align:center; font-weight:bold; color:var(--gold)">${pts}</td>
+        </tr>`;
+      });
+      html += '</table>';
+      panel.innerHTML = html;
+    } else {
+      let html = `<table class="group-table"><tr><th colspan="2">Group ${letter}</th></tr>`;
+      sorted.forEach(t => {
+        const owner = teamOwner[normalizeTeam(t)];
+        const flag = flags[normalizeTeam(t)] || '';
+        html += `<tr><td>${flag} ${t}</td><td>${owner ? `<span class="owner-tag">${owner}</span>` : ''}</td></tr>`;
+      });
+      html += '</table>';
+      panel.innerHTML = html;
+    }
+
     grid.appendChild(panel);
   });
 }
@@ -739,14 +794,11 @@ renderGroups();
 
 // Parse fixture day/time strings into a JS Date (BST = UTC+1)
 function fixtureDate(day, time) {
-  // day e.g. "Thu 11 Jun", time e.g. "8pm", "1.30am", "11pm"
   const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-  const parts = day.split(' '); // ["Thu","11","Jun"]
+  const parts = day.split(' ');
   const d = parseInt(parts[1], 10);
   const m = months[parts[2]];
   const y = 2026;
-
-  // Parse time: "8pm" -> 20:00, "1.30am" -> 01:30, "11pm" -> 23:00, "3am" -> 03:00
   let hours = 0, mins = 0;
   const isPm = time.includes('pm');
   const clean = time.replace('am','').replace('pm','');
@@ -759,26 +811,29 @@ function fixtureDate(day, time) {
   }
   if (isPm && hours !== 12) hours += 12;
   if (!isPm && hours === 12) hours = 0;
-
-  // BST = UTC+1, so subtract 1 hour to get UTC for Date constructor
   return new Date(Date.UTC(y, m, d, hours - 1, mins));
 }
 
-
-const STANDINGS_URL = "https://worldcupwiki.com/standings/";
-const PROXY = "https://api.allorigins.win/raw?url=";
-
-const standingsNameMap = {
-  "United States": "USA",
-  "Türkiye": "Turkiye",
+// Team name normalization for API responses
+const apiNameMap = {
+  "United States": "USA", "USA": "USA",
+  "Türkiye": "Turkiye", "Turkey": "Turkiye",
   "Curaçao": "Curacao",
-  "South Korea": "South Korea",
-  "Korea Republic": "South Korea"
+  "Korea Republic": "South Korea",
+  "DR Congo": "DR Congo", "Congo DR": "DR Congo",
+  "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+  "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+  "Ivory Coast": "Ivory Coast", "Cote d'Ivoire": "Ivory Coast",
+  "Cape Verde": "Cape Verde",
+  "New Zealand": "New Zealand",
+  "Saudi Arabia": "Saudi Arabia",
+  "South Africa": "South Africa",
 };
 
-function normalizeStandingsName(name) {
+function normalizeApiName(name) {
+  if (!name) return name;
   name = name.trim();
-  return standingsNameMap[name] || name;
+  return apiNameMap[name] || name;
 }
 
 async function refreshLiveResults() {
@@ -789,51 +844,53 @@ async function refreshLiveResults() {
   status.textContent = '';
 
   try {
-    const res = await fetch(PROXY + encodeURIComponent(STANDINGS_URL));
-    if (!res.ok) throw new Error('Network response not OK');
-    const html = await res.text();
+    // Try worldcup26.ir API first (no auth, CORS enabled)
+    const res = await fetch('https://worldcup26.ir/get/groups');
+    if (!res.ok) throw new Error('API not OK');
+    const data = await res.json();
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const tables = doc.querySelectorAll('table');
-
+    // data is array of groups: { name:"A", teams:[...], standings:[{team,played,w,d,l,gf,ga,gd,points}] }
     let updated = 0;
     let outCount = 0;
+    liveStandings = {};
 
-    tables.forEach(table => {
-      const rows = table.querySelectorAll('tr');
-      rows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td')).map(c => c.textContent.trim());
-        // Expect: Pos, Team, MP, W, D, L, GF, GA, GD, Pts  (10 cols)
-        if (cells.length === 10) {
-          const teamRaw = cells[1];
-          const mp = parseInt(cells[2], 10);
-          const pts = parseInt(cells[9], 10);
-          const team = normalizeStandingsName(teamRaw);
+    const groups = Array.isArray(data) ? data : (data.groups || data.data || []);
 
-          if (!isNaN(mp) && !isNaN(pts) && teamOwner[team]) {
-            updated++;
-            // Conservative auto-elimination: lost all 3 group games
-            if (mp === 3 && pts === 0) {
-              if (!eliminated.has(team)) {
-                eliminated.add(team);
-                outCount++;
-              }
-            }
-          }
+    groups.forEach(group => {
+      const standings = group.standings || group.teams || [];
+      standings.forEach(s => {
+        const rawName = s.team?.name || s.team || s.name || '';
+        const team = normalizeApiName(rawName);
+        if (!team) return;
+        liveStandings[team] = {
+          mp: s.played ?? s.mp ?? s.matchesPlayed ?? 0,
+          w: s.w ?? s.won ?? 0,
+          d: s.d ?? s.drawn ?? 0,
+          l: s.l ?? s.lost ?? 0,
+          gf: s.gf ?? s.goalsFor ?? 0,
+          ga: s.ga ?? s.goalsAgainst ?? 0,
+          gd: s.gd ?? s.goalDifference ?? 0,
+          pts: s.points ?? s.pts ?? 0
+        };
+        updated++;
+        if (liveStandings[team].mp === 3 && liveStandings[team].pts === 0) {
+          if (!eliminated.has(team)) { eliminated.add(team); outCount++; }
         }
       });
     });
 
     renderSquads();
+    renderGroups();
 
     if (updated === 0) {
-      status.textContent = "Couldn't read standings data - try again later, or cross teams off manually.";
+      status.textContent = "Got a response but couldn't read standings yet — tournament may not have started. Try again later.";
     } else {
-      status.textContent = `Checked ${updated} of our teams. ${outCount} newly marked out (lost all group games). Group stage hasn't finished, so 3rd-place qualification calls still need a manual tick once the picture is clearer.`;
+      status.textContent = `Updated ${updated} teams. ${outCount ? outCount + ' newly knocked out.' : ''} Groups tab now shows live standings.`;
     }
+
   } catch (err) {
-    status.textContent = "Live refresh failed (source unavailable). Cross teams off manually for now.";
+    status.textContent = "Live refresh failed — try BBC or Sky Sports for scores. Manual elimination ticks still work.";
+    console.error(err);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Refresh Live Results';
