@@ -498,7 +498,66 @@
     z-index: 9999;
   }
 
-  footer {
+  /* Bracket */
+  .bracket-stage { margin-bottom: 24px; }
+  .bracket-stage-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  .bracket-matches {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .bracket-match {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.15);
+  }
+  .bracket-match.has-sweeper { border-color: rgba(212,160,23,0.5); }
+  .bracket-match.final-match { border-color: var(--gold); background: rgba(212,160,23,0.08); }
+  .bracket-match-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 10px;
+    background: rgba(0,0,0,0.2);
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+  .bracket-team {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.88rem;
+    transition: background 0.15s;
+  }
+  .bracket-team:last-child { border-bottom: none; }
+  .bracket-team.winner { background: rgba(39,174,96,0.15); font-weight: bold; }
+  .bracket-team.loser { opacity: 0.45; text-decoration: line-through; }
+  .bracket-team .score-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    min-width: 20px;
+    text-align: right;
+    color: var(--gold);
+  }
+  .bracket-team .team-name { flex: 1; }
+  .bracket-divider {
+    text-align: center;
+    font-size: 0.7rem;
+    opacity: 0.5;
+    padding: 2px;
+    background: rgba(0,0,0,0.1);
+  }
     text-align: center;
     font-size: 0.72rem;
     opacity: 0.6;
@@ -537,6 +596,7 @@
     <div class="tab active" data-tab="myteams">My Teams</div>
     <div class="tab" data-tab="fixtures">Fixtures (UK times)</div>
     <div class="tab" data-tab="groups">Groups</div>
+    <div class="tab" data-tab="bracket">Bracket</div>
   </div>
 
   <!-- MY TEAMS VIEW -->
@@ -562,6 +622,11 @@
   <!-- GROUPS VIEW -->
   <div class="view" id="groups">
     <div class="groups-grid" id="groupsGrid"></div>
+  </div>
+
+  <!-- BRACKET VIEW -->
+  <div class="view" id="bracket">
+    <div id="bracketContainer"></div>
   </div>
 
   <footer>Six teams each, drawn at random. May the odds be ever in your favour.</footer>
@@ -616,167 +681,67 @@ Object.entries(squads).forEach(([owner, teams]) => {
 
 // Group stage fixtures (UK times), group letter, host city
 const fixtures = [
-  { day: "Thu 11 Jun", time: "8pm",   teams: ["Mexico","South Africa"], group: "A", venue: "Mexico City" },
-  { day: "Fri 12 Jun", time: "3am",   teams: ["South Korea","Czechia"], group: "A", venue: "Zapopan" },
-  { day: "Fri 12 Jun", time: "8pm",   teams: ["Canada","Bosnia and Herzegovina"], group: "B", venue: "Toronto" },
-  { day: "Sat 13 Jun", time: "2am",   teams: ["USA","Paraguay"], group: "D", venue: "Los Angeles" },
-  { day: "Sat 13 Jun", time: "8pm",   teams: ["Qatar","Switzerland"], group: "B", venue: "Santa Clara" },
-  { day: "Sat 13 Jun", time: "11pm",  teams: ["Brazil","Morocco"], group: "C", venue: "New Jersey" },
-  { day: "Sun 14 Jun", time: "2am",   teams: ["Haiti","Scotland"], group: "C", venue: "Foxborough" },
-  { day: "Sun 14 Jun", time: "5am",   teams: ["Australia","Turkiye"], group: "D", venue: "Vancouver" },
-  { day: "Sun 14 Jun", time: "6pm",   teams: ["Germany","Curacao"], group: "E", venue: "Houston" },
-  { day: "Sun 14 Jun", time: "9pm",   teams: ["Netherlands","Japan"], group: "F", venue: "Arlington" },
-  { day: "Mon 15 Jun", time: "12am",  teams: ["Ivory Coast","Ecuador"], group: "E", venue: "Philadelphia" },
-  { day: "Mon 15 Jun", time: "3am",   teams: ["Sweden","Tunisia"], group: "F", venue: "Guadalupe" },
-  { day: "Mon 15 Jun", time: "5pm",   teams: ["Spain","Cape Verde"], group: "H", venue: "Atlanta" },
-  { day: "Mon 15 Jun", time: "8pm",   teams: ["Belgium","Egypt"], group: "G", venue: "Seattle" },
-  { day: "Mon 15 Jun", time: "11pm",  teams: ["Saudi Arabia","Uruguay"], group: "H", venue: "Miami" },
-  { day: "Tue 16 Jun", time: "2am",   teams: ["Iran","New Zealand"], group: "G", venue: "Los Angeles" },
-  { day: "Tue 16 Jun", time: "8pm",   teams: ["France","Senegal"], group: "I", venue: "New Jersey" },
-  { day: "Tue 16 Jun", time: "11pm",  teams: ["Iraq","Norway"], group: "I", venue: "Foxborough" },
-  { day: "Wed 17 Jun", time: "2am",   teams: ["Argentina","Algeria"], group: "J", venue: "Kansas City" },
-  { day: "Wed 17 Jun", time: "5am",   teams: ["Austria","Jordan"], group: "J", venue: "Santa Clara" },
-  { day: "Wed 17 Jun", time: "6pm",   teams: ["Portugal","DR Congo"], group: "K", venue: "Houston" },
-  { day: "Wed 17 Jun", time: "9pm",   teams: ["England","Croatia"], group: "L", venue: "Arlington" },
-  { day: "Thu 18 Jun", time: "12am",  teams: ["Ghana","Panama"], group: "L", venue: "Toronto" },
-  { day: "Thu 18 Jun", time: "3am",   teams: ["Uzbekistan","Colombia"], group: "K", venue: "Mexico City" },
-  { day: "Thu 18 Jun", time: "5pm",   teams: ["Czechia","South Africa"], group: "A", venue: "Atlanta" },
-  { day: "Thu 18 Jun", time: "8pm",   teams: ["Switzerland","Bosnia and Herzegovina"], group: "B", venue: "Los Angeles" },
-  { day: "Thu 18 Jun", time: "11pm",  teams: ["Canada","Qatar"], group: "B", venue: "Vancouver" },
-  { day: "Fri 19 Jun", time: "2am",   teams: ["Mexico","South Korea"], group: "A", venue: "Zapopan" },
-  { day: "Fri 19 Jun", time: "8pm",   teams: ["USA","Australia"], group: "D", venue: "Seattle" },
-  { day: "Fri 19 Jun", time: "11pm",  teams: ["Scotland","Morocco"], group: "C", venue: "Foxborough" },
-  { day: "Sat 20 Jun", time: "1.30am",teams: ["Brazil","Haiti"], group: "C", venue: "Philadelphia" },
-  { day: "Sat 20 Jun", time: "4am",   teams: ["Turkiye","Paraguay"], group: "D", venue: "Santa Clara" },
-  { day: "Sat 20 Jun", time: "6pm",   teams: ["Netherlands","Sweden"], group: "A", venue: "Houston" },
-  { day: "Sat 20 Jun", time: "9pm",   teams: ["Germany","Ivory Coast"], group: "E", venue: "Toronto" },
-  { day: "Sun 21 Jun", time: "1am",   teams: ["Ecuador","Curacao"], group: "E", venue: "Kansas City" },
-  { day: "Sun 21 Jun", time: "5am",   teams: ["Tunisia","Japan"], group: "F", venue: "Guadalupe" },
-  { day: "Sun 21 Jun", time: "5pm",   teams: ["Spain","Saudi Arabia"], group: "H", venue: "Atlanta" },
-  { day: "Sun 21 Jun", time: "8pm",   teams: ["Belgium","Iran"], group: "G", venue: "Los Angeles" },
-  { day: "Sun 21 Jun", time: "11pm",  teams: ["Uruguay","Cape Verde"], group: "H", venue: "Miami" },
-  { day: "Mon 22 Jun", time: "2am",   teams: ["New Zealand","Egypt"], group: "G", venue: "Vancouver" },
-  { day: "Mon 22 Jun", time: "6pm",   teams: ["Argentina","Austria"], group: "J", venue: "Arlington" },
-  { day: "Mon 22 Jun", time: "10pm",  teams: ["France","Iraq"], group: "I", venue: "Philadelphia" },
-  { day: "Tue 23 Jun", time: "1am",   teams: ["Norway","Senegal"], group: "I", venue: "Toronto" },
-  { day: "Tue 23 Jun", time: "4am",   teams: ["Jordan","Algeria"], group: "J", venue: "Santa Clara" },
-  { day: "Tue 23 Jun", time: "6pm",   teams: ["Portugal","Uzbekistan"], group: "K", venue: "Houston" },
-  { day: "Tue 23 Jun", time: "9pm",   teams: ["England","Ghana"], group: "L", venue: "Foxborough" },
-  { day: "Wed 24 Jun", time: "12am",  teams: ["Panama","Croatia"], group: "L", venue: "Foxborough" },
-  { day: "Wed 24 Jun", time: "3am",   teams: ["Colombia","DR Congo"], group: "K", venue: "Zapopan" },
-  { day: "Wed 24 Jun", time: "8pm",   teams: ["Switzerland","Canada"], group: "B", venue: "Vancouver" },
-  { day: "Wed 24 Jun", time: "8pm",   teams: ["Bosnia and Herzegovina","Qatar"], group: "B", venue: "Seattle" },
-  { day: "Wed 24 Jun", time: "11pm",  teams: ["Morocco","Haiti"], group: "C", venue: "Atlanta" },
-  { day: "Wed 24 Jun", time: "11pm",  teams: ["Scotland","Brazil"], group: "C", venue: "Miami" },
-  { day: "Thu 25 Jun", time: "2am",   teams: ["South Africa","South Korea"], group: "A", venue: "Guadalupe" },
-  { day: "Thu 25 Jun", time: "2am",   teams: ["Czechia","Mexico"], group: "A", venue: "Mexico City" },
-  { day: "Thu 25 Jun", time: "9pm",   teams: ["Curacao","Ivory Coast"], group: "E", venue: "Philadelphia" },
-  { day: "Thu 25 Jun", time: "9pm",   teams: ["Ecuador","Germany"], group: "E", venue: "New Jersey" },
-  { day: "Fri 26 Jun", time: "12am",  teams: ["Tunisia","Netherlands"], group: "F", venue: "Kansas City" },
-  { day: "Fri 26 Jun", time: "12am",  teams: ["Japan","Sweden"], group: "F", venue: "Arlington" },
-  { day: "Fri 26 Jun", time: "3am",   teams: ["Turkiye","USA"], group: "D", venue: "Los Angeles" },
-  { day: "Fri 26 Jun", time: "3am",   teams: ["Paraguay","Australia"], group: "D", venue: "Santa Clara" },
-  { day: "Fri 26 Jun", time: "8pm",   teams: ["Norway","France"], group: "I", venue: "Foxborough" },
-  { day: "Fri 26 Jun", time: "8pm",   teams: ["Senegal","Iraq"], group: "I", venue: "Toronto" },
-  { day: "Sat 27 Jun", time: "1am",   teams: ["Cape Verde","Saudi Arabia"], group: "H", venue: "Houston" },
-  { day: "Sat 27 Jun", time: "1am",   teams: ["Uruguay","Spain"], group: "H", venue: "Zapopan" },
-  { day: "Sat 27 Jun", time: "4am",   teams: ["New Zealand","Belgium"], group: "G", venue: "Vancouver" },
-  { day: "Sat 27 Jun", time: "4am",   teams: ["Egypt","Iran"], group: "G", venue: "Seattle" },
-  { day: "Sat 27 Jun", time: "10pm",  teams: ["Panama","England"], group: "L", venue: "New Jersey" },
-  { day: "Sat 27 Jun", time: "10pm",  teams: ["Croatia","Ghana"], group: "L", venue: "Philadelphia" },
+  // ROUND OF 32
+  { day: "Sun 28 Jun", time: "6pm",    teams: ["South Africa","Canada"],           round: "R32", venue: "Los Angeles", matchId: 73 },
+  { day: "Mon 29 Jun", time: "6pm",    teams: ["Brazil","Japan"],                  round: "R32", venue: "Houston", matchId: 76 },
+  { day: "Mon 29 Jun", time: "9.30pm", teams: ["Germany","Paraguay"],              round: "R32", venue: "Foxborough", matchId: 74 },
+  { day: "Tue 30 Jun", time: "3am",    teams: ["Netherlands","Morocco"],           round: "R32", venue: "Guadalupe", matchId: 75 },
+  { day: "Tue 30 Jun", time: "6pm",    teams: ["Ivory Coast","Norway"],            round: "R32", venue: "Arlington", matchId: 78 },
+  { day: "Tue 30 Jun", time: "10pm",   teams: ["France","Sweden"],                 round: "R32", venue: "New Jersey", matchId: 77 },
+  { day: "Wed 1 Jul",  time: "2am",    teams: ["Mexico","Ecuador"],                round: "R32", venue: "Mexico City", matchId: 79 },
+  { day: "Wed 1 Jul",  time: "5pm",    teams: ["England","DR Congo"],              round: "R32", venue: "Atlanta", matchId: 80 },
+  { day: "Wed 1 Jul",  time: "9pm",    teams: ["Belgium","Senegal"],               round: "R32", venue: "Seattle", matchId: 82 },
+  { day: "Thu 2 Jul",  time: "12am",   teams: ["Portugal","Croatia"],              round: "R32", venue: "Toronto", matchId: 83 },
+  { day: "Thu 2 Jul",  time: "8pm",    teams: ["Spain","Austria"],                 round: "R32", venue: "Los Angeles", matchId: 84 },
+  { day: "Fri 3 Jul",  time: "4am",    teams: ["Switzerland","Algeria"],           round: "R32", venue: "Vancouver", matchId: 85 },
+  { day: "Fri 3 Jul",  time: "7pm",    teams: ["Australia","Egypt"],               round: "R32", venue: "Arlington", matchId: 88 },
+  { day: "Fri 3 Jul",  time: "11pm",   teams: ["Argentina","Cape Verde"],          round: "R32", venue: "Miami", matchId: 86 },
+  { day: "Sat 4 Jul",  time: "2.30am", teams: ["Colombia","Ghana"],                round: "R32", venue: "Kansas City", matchId: 87 },
+  { day: "Sat 4 Jul",  time: "8pm",    teams: ["USA","Bosnia and Herzegovina"],    round: "R32", venue: "San Francisco", matchId: 81 },
+  // ROUND OF 16
+  { day: "Sun 6 Jul",  time: "6pm",    teams: ["Canada","Morocco"],                round: "R16", venue: "Houston", matchId: 90 },
+  { day: "Sun 6 Jul",  time: "10pm",   teams: ["W89","W90"],                       round: "R16", venue: "Philadelphia", matchId: 89, label: "W France/Sweden vs W Canada/Morocco" },
+  { day: "Mon 7 Jul",  time: "9pm",    teams: ["Brazil","W78"],                    round: "R16", venue: "New Jersey", matchId: 91, label: "Brazil vs W Ivory Coast/Norway" },
+  { day: "Tue 8 Jul",  time: "1am",    teams: ["W79","England"],                   round: "R16", venue: "Mexico City", matchId: 92, label: "W Mexico/Ecuador vs England" },
+  { day: "Tue 8 Jul",  time: "8pm",    teams: ["W83","W84"],                       round: "R16", venue: "Arlington", matchId: 93, label: "W Portugal/Croatia vs W Spain/Austria" },
+  { day: "Wed 9 Jul",  time: "12am",   teams: ["W85","W86"],                       round: "R16", venue: "Miami", matchId: 94, label: "W Switzerland/Algeria vs W Argentina/Cape Verde" },
+  { day: "Wed 9 Jul",  time: "8pm",    teams: ["W87","W88"],                       round: "R16", venue: "Seattle", matchId: 95, label: "W Colombia/Ghana vs W Australia/Egypt" },
+  { day: "Thu 10 Jul", time: "12am",   teams: ["W81","W82"],                       round: "R16", venue: "Dallas", matchId: 96, label: "W USA/Bosnia vs W Belgium/Senegal" },
+  // QUARTER-FINALS
+  { day: "Fri 11 Jul", time: "8pm",    teams: ["W89","W90"],                       round: "QF", venue: "Boston", matchId: 97, label: "QF1" },
+  { day: "Sat 12 Jul", time: "3pm",    teams: ["W93","W94"],                       round: "QF", venue: "Los Angeles", matchId: 98, label: "QF2" },
+  { day: "Sat 12 Jul", time: "5pm",    teams: ["W91","W92"],                       round: "QF", venue: "Miami", matchId: 99, label: "QF3" },
+  { day: "Sat 12 Jul", time: "9pm",    teams: ["W95","W96"],                       round: "QF", venue: "Kansas City", matchId: 100, label: "QF4" },
+  // SEMI-FINALS
+  { day: "Wed 15 Jul", time: "3pm",    teams: ["W97","W98"],                       round: "SF", venue: "Dallas", matchId: 101, label: "SF1" },
+  { day: "Thu 16 Jul", time: "3pm",    teams: ["W99","W100"],                      round: "SF", venue: "Atlanta", matchId: 102, label: "SF2" },
+  // THIRD PLACE
+  { day: "Sat 19 Jul", time: "5pm",    teams: ["L101","L102"],                     round: "3RD", venue: "Miami", matchId: 103, label: "3rd Place Play-off" },
+  // FINAL
+  { day: "Sun 19 Jul", time: "8pm",    teams: ["W101","W102"],                     round: "FINAL", venue: "New Jersey", matchId: 104, label: "World Cup Final" },
 ];
 
 // Confirmed BBC/ITV split (partial - the rest TBC)
 const channelMap = {
-  // June 11
-  "Mexico-South Africa": "ITV",
-  // June 12
-  "South Korea-Czechia": "ITV",
-  "Canada-Bosnia and Herzegovina": "BBC",
-  // June 13
-  "USA-Paraguay": "BBC",
-  "Qatar-Switzerland": "ITV",
-  "Brazil-Morocco": "BBC",
-  // June 14
-  "Haiti-Scotland": "BBC",
-  "Australia-Turkiye": "ITV",
-  "Germany-Curacao": "ITV",
-  "Netherlands-Japan": "ITV",
-  // June 15
-  "Ivory Coast-Ecuador": "BBC",
-  "Sweden-Tunisia": "ITV",
-  "Spain-Cape Verde": "ITV",
-  "Belgium-Egypt": "BBC",
-  "Saudi Arabia-Uruguay": "ITV",
-  // June 16
-  "Iran-New Zealand": "BBC",
-  "France-Senegal": "BBC",
-  "Iraq-Norway": "BBC",
-  // June 17
-  "Argentina-Algeria": "ITV",
-  "Austria-Jordan": "BBC",
-  "Portugal-DR Congo": "BBC",
-  "England-Croatia": "ITV",
-  // June 18
-  "Ghana-Panama": "ITV",
-  "Uzbekistan-Colombia": "BBC",
-  "South Africa-Czechia": "BBC",
-  "Bosnia and Herzegovina-Switzerland": "ITV",
-  "Canada-Qatar": "ITV",
-  // June 19
-  "Mexico-South Korea": "BBC",
-  "USA-Australia": "BBC",
-  "Scotland-Morocco": "ITV",
-  // June 20
-  "Brazil-Haiti": "ITV",
-  "Paraguay-Turkiye": "ITV",
-  "Netherlands-Sweden": "BBC",
-  "Germany-Ivory Coast": "ITV",
-  // June 21
-  "Ecuador-Curacao": "BBC",
-  "Tunisia-Japan": "BBC",
-  "Spain-Saudi Arabia": "ITV",
-  "Belgium-Iran": "BBC",
-  "Uruguay-Cape Verde": "ITV",
-  // June 22
-  "New Zealand-Egypt": "ITV",
-  "Argentina-Austria": "BBC",
-  // June 23
-  "France-Iraq": "BBC",
-  "Norway-Senegal": "ITV",
-  "Jordan-Algeria": "BBC",
-  "Portugal-Uzbekistan": "ITV",
-  "England-Ghana": "BBC",
-  "Panama-Croatia": "ITV",
-  // June 24
-  "Colombia-DR Congo": "BBC",
-  "Switzerland-Canada": "ITV",
-  "Bosnia and Herzegovina-Qatar": "BBC",
-  "Morocco-Haiti": "ITV",
-  "Scotland-Brazil": "BBC",
-  // June 25
-  "South Africa-South Korea": "ITV",
-  "Czechia-Mexico": "BBC",
-  "Ecuador-Germany": "BBC",
-  "Curacao-Ivory Coast": "ITV",
-  // June 26
-  "Tunisia-Netherlands": "BBC",
-  "Japan-Sweden": "ITV",
-  "Turkiye-USA": "BBC",
-  "Paraguay-Australia": "ITV",
-  // June 27
-  "Norway-France": "ITV",
-  "Senegal-Iraq": "BBC",
-  "Cape Verde-Saudi Arabia": "BBC",
-  "Uruguay-Spain": "ITV",
-  "New Zealand-Belgium": "ITV",
-  "Egypt-Iran": "BBC",
-  "Panama-England": "ITV",
-  "Croatia-Ghana": "BBC",
-  "Jordan-Argentina": "BBC",
-  "Algeria-Austria": "ITV",
-  "DR Congo-Portugal": "ITV",
-  "Colombia-Uzbekistan": "BBC"
+  // R32 - confirmed
+  "South Africa-Canada": "ITV",
+  "Brazil-Japan": "ITV",
+  "Germany-Paraguay": "BBC",
+  "Netherlands-Morocco": "BBC",
+  "Ivory Coast-Norway": "ITV",
+  "France-Sweden": "BBC",
+  "Mexico-Ecuador": "ITV",
+  "England-DR Congo": "BBC",
+  "Belgium-Senegal": "BBC",
+  "Portugal-Croatia": "ITV",
+  "Spain-Austria": "ITV",
+  "Switzerland-Algeria": "BBC",
+  "Australia-Egypt": "BBC",
+  "Argentina-Cape Verde": "ITV",
+  "Colombia-Ghana": "BBC",
+  "USA-Bosnia and Herzegovina": "ITV",
+  // R16 onwards - TBC split evenly
+  "Canada-Morocco": "ITV",
 };
 
 function getChannel(teams) {
@@ -1012,10 +977,14 @@ function renderFixtures() {
       }
     }
 
-    teamsCell.innerHTML =
-      `${flags[normalizeTeam(fx.teams[0])] || ''} ${fx.teams[0]}${owner1 ? `<span class="owner-tag">${owner1}</span>` : ''}${scoreHtml} vs ` +
-      `${flags[normalizeTeam(fx.teams[1])] || ''} ${fx.teams[1]}${owner2 ? `<span class="owner-tag">${owner2}</span>` : ''} ` +
-      `<span style="opacity:0.6; font-size:0.75rem;">(Grp ${fx.group}, ${fx.venue})</span>`;
+    const roundLabel = fx.round === 'R32' ? 'R32' : fx.round === 'R16' ? 'R16' : fx.round === 'QF' ? 'QF' : fx.round === 'SF' ? 'SF' : fx.round === 'FINAL' ? '🏆 FINAL' : fx.round === '3RD' ? '3rd Place' : '';
+    let teamsDisplay;
+    if (fx.label && !owner1 && !owner2) {
+      teamsDisplay = `${fx.label}`;
+    } else {
+      teamsDisplay = `${flags[t1norm] || ''} ${fx.teams[0]}${owner1 ? `<span class="owner-tag">${owner1}</span>` : ''}${scoreHtml} vs ${flags[t2norm] || ''} ${fx.teams[1]}${owner2 ? `<span class="owner-tag">${owner2}</span>` : ''}`;
+    }
+    teamsCell.innerHTML = `${teamsDisplay} <span style="opacity:0.6; font-size:0.75rem;">(${roundLabel}, ${fx.venue})</span>`;
 
     const timeCell = document.createElement('div');
     timeCell.className = 'time';
@@ -1118,9 +1087,108 @@ function renderGroups() {
   });
 }
 
+function renderBracket() {
+  const container = document.getElementById('bracketContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const stages = [
+    { key: 'R32',   title: 'Round of 32' },
+    { key: 'R16',   title: 'Round of 16' },
+    { key: 'QF',    title: 'Quarter-Finals' },
+    { key: 'SF',    title: 'Semi-Finals' },
+    { key: '3RD',   title: '3rd Place Play-off' },
+    { key: 'FINAL', title: '🏆 World Cup Final — 19 July, New Jersey' },
+  ];
+
+  stages.forEach(stage => {
+    const stageFx = fixtures.filter(f => f.round === stage.key);
+    if (!stageFx.length) return;
+
+    const stageDiv = document.createElement('div');
+    stageDiv.className = 'bracket-stage';
+
+    const title = document.createElement('div');
+    title.className = 'bracket-stage-title';
+    title.textContent = stage.title;
+    stageDiv.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'bracket-matches';
+
+    stageFx.forEach(fx => {
+      const t1 = fx.teams[0];
+      const t2 = fx.teams[1];
+      const t1norm = normalizeTeam(t1);
+      const t2norm = normalizeTeam(t2);
+      const owner1 = teamOwner[t1norm];
+      const owner2 = teamOwner[t2norm];
+      const hasSweeper = owner1 || owner2;
+      const isFinal = stage.key === 'FINAL';
+
+      // Get score from liveScores
+      const scoreKey = t1norm + '|||' + t2norm;
+      const scoreData = liveScores[scoreKey];
+      const s1 = scoreData ? parseInt(scoreData.score1) : null;
+      const s2 = scoreData ? parseInt(scoreData.score2) : null;
+      const isCompleted = scoreData?.completed;
+      const isLive = scoreData?.state === 'in';
+
+      const card = document.createElement('div');
+      card.className = 'bracket-match' + (hasSweeper ? ' has-sweeper' : '') + (isFinal ? ' final-match' : '');
+
+      // Header: date, time, channel, venue
+      const ch = getChannel(fx.teams);
+      const header = document.createElement('div');
+      header.className = 'bracket-match-header';
+      header.innerHTML = `<span>${fx.day} ${fx.time}</span><span>${ch.replace(/<[^>]+>/g,'')}</span><span style="opacity:0.7">${fx.venue}</span>`;
+      card.appendChild(header);
+
+      // Team rows
+      [0,1].forEach((idx) => {
+        const team = fx.teams[idx];
+        const teamNorm = normalizeTeam(team);
+        const owner = teamOwner[teamNorm];
+        const flag = flags[teamNorm] || '';
+        const score = idx === 0 ? s1 : s2;
+        const otherScore = idx === 0 ? s2 : s1;
+        const isWinner = isCompleted && score > otherScore;
+        const isLoser = isCompleted && score < otherScore;
+        const isElim = eliminated.has(teamNorm);
+
+        const teamDiv = document.createElement('div');
+        teamDiv.className = 'bracket-team' + (isWinner ? ' winner' : '') + (isLoser || isElim ? ' loser' : '');
+
+        const isPending = team.startsWith('W') || team.startsWith('L');
+        const displayName = isPending ? (fx.label ? fx.label.split(' vs ')[idx] || team : team) : `${flag} ${team}`;
+
+        teamDiv.innerHTML = `
+          <span class="team-name">${displayName}${owner ? ` <span class="owner-tag" style="font-size:0.65rem;padding:1px 5px;">${owner}</span>` : ''}</span>
+          <span class="score-badge">${isCompleted || isLive ? (score ?? '') : ''}</span>
+        `;
+
+        card.appendChild(teamDiv);
+
+        if (idx === 0) {
+          const divider = document.createElement('div');
+          divider.className = 'bracket-divider';
+          divider.textContent = isLive ? '🔴 LIVE' : isCompleted ? 'FT' : 'vs';
+          card.appendChild(divider);
+        }
+      });
+
+      grid.appendChild(card);
+    });
+
+    stageDiv.appendChild(grid);
+    container.appendChild(stageDiv);
+  });
+}
+
 renderSquads();
 renderFixtures();
 renderGroups();
+renderBracket();
 
 // Parse fixture day/time strings into a JS Date (BST = UTC+1)
 function fixtureDate(day, time) {
@@ -1267,6 +1335,7 @@ async function refreshLiveResults(silent = false) {
     renderGroups();
     updateFixtureScores(events);
     updateLeaderBanner();
+    renderBracket();
 
     if (updated === 0) {
       if (!silent) status.textContent = "No completed matches found yet — try again after a game finishes.";
